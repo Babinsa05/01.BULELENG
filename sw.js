@@ -1,4 +1,4 @@
-const CACHE_NAME = "dukops-babinsa-v20";
+const CACHE_NAME = "dukops-babinsa-v21";
 const APP_SHELL = [
   "./",
   "./index.html",

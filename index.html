@@ -142,7 +142,7 @@
         let currentFile = null;
         let fileIsValid = false;
         let lastAutoDateNarration = "";
-        let submittedBabinsas = [];
+        let submittedBabinsas = JSON.parse(localStorage.getItem("dukopsSubmittedBabinsas") || "[]");
         const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         function getDeviceZoneLabel(date = new Date()) {
@@ -1302,6 +1302,7 @@
                 saveSubmittedDate(tanggalWaktu);
                 addSendLog(`${files.baseName}.png dan ${files.baseName}.txt`, "success");
                 submittedBabinsas.push(selectedDesa);
+                localStorage.setItem("dukopsSubmittedBabinsas", JSON.stringify(submittedBabinsas));
             } catch (error) {
                 console.error("Gagal membuat file laporan:", error);
                 addSendLog(`${getSubmissionBaseName()}.png dan ${getSubmissionBaseName()}.txt`, "failed", error.message);
