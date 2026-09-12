@@ -44,6 +44,15 @@
         </div>
     </div>
 
+    <div id="thankYouModal" class="thank-you-modal" hidden>
+        <div class="thank-you-card">
+            <img class="modal-logo" src="logo/logo-1.png" alt="Lambang TNI Angkatan Darat">
+            <h2>Terima Kasih</h2>
+            <div id="thankYouMessages" aria-live="polite"></div>
+            <button type="button" class="thank-you-button" onclick="closeThankYouApplication()">OK</button>
+        </div>
+    </div>
+
     <!-- Main Container -->
     <div class="container">
         <div id="printable-area">
@@ -133,6 +142,7 @@
         let currentFile = null;
         let fileIsValid = false;
         let lastAutoDateNarration = "";
+        let submittedBabinsas = [];
         const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         function getDeviceZoneLabel(date = new Date()) {
@@ -1001,6 +1011,25 @@
         }
 
         function exitApplication() {
+            const thankYouModal = document.getElementById("thankYouModal");
+            const thankYouMessages = document.getElementById("thankYouMessages");
+            if (!thankYouModal || !thankYouMessages) {
+                window.close();
+                return;
+            }
+
+            const totalReports = submittedBabinsas.length;
+            const reportMessages = submittedBabinsas
+                .map(desa => `<p>Terima kasih kepada <strong>Babinsa ${desa}</strong> telah mengirim laporan.</p>`)
+                .join("");
+            thankYouMessages.innerHTML = `
+                ${reportMessages}
+                <p class="thank-you-total">Jumlah laporan: <strong>${totalReports}</strong></p>
+            `;
+            thankYouModal.hidden = false;
+        }
+
+        function closeThankYouApplication() {
             window.close();
             setTimeout(() => {
                 if (!document.hidden) {
@@ -1167,7 +1196,7 @@
 
         function buildSubmissionNarrative() {
             const desa = selectedDesa || "Tanpa Desa";
-            const narasi = document.getElementById("narasi").value.trim();
+            const narasiInput = document.getElementById("narasi").value.trim();
             const date = tanggalWaktu ? new Date(tanggalWaktu) : new Date();
             const formattedDate = formatIndonesiaDate(date, {
                 weekday: "long",
@@ -1175,6 +1204,11 @@
                 month: "long",
                 year: "numeric"
             });
+            const narasi = narasiInput === formattedDate
+                ? ""
+                : narasiInput.startsWith(`${formattedDate} `)
+                    ? narasiInput.slice(formattedDate.length).trim()
+                    : narasiInput;
 
             return `${formattedDate}\tBabinsa ${desa} ${narasi}`;
         }
@@ -1237,7 +1271,7 @@
             }
 
             if (isDuplicateSubmission()) {
-                showNotification(`Anda sudah mengirim laporan di tanggal yang sama: ${formatSubmissionDate(tanggalWaktu)}.`, "warning");
+                showNotification(`Laporan sudah dikirim pada tanggal yang sama: ${formatSubmissionDate(tanggalWaktu)}. Pengiriman dibatalkan.`, "duplicate");
                 return;
             }
 
@@ -1267,9 +1301,7 @@
                 updateCounter();
                 saveSubmittedDate(tanggalWaktu);
                 addSendLog(`${files.baseName}.png dan ${files.baseName}.txt`, "success");
-                if (!driveUploaded) {
-                    showNotification("PNG dan TXT berhasil diunduh.", "success");
-                }
+                submittedBabinsas.push(selectedDesa);
             } catch (error) {
                 console.error("Gagal membuat file laporan:", error);
                 addSendLog(`${getSubmissionBaseName()}.png dan ${getSubmissionBaseName()}.txt`, "failed", error.message);
@@ -1493,13 +1525,23 @@
             const notification = document.createElement('div');
             notification.className = `notification ${type}`;
             notification.textContent = message;
-            
+            notification.setAttribute('role', 'button');
+            notification.setAttribute('tabindex', '0');
+            notification.setAttribute('aria-label', 'Tutup notifikasi');
+
             document.body.appendChild(notification);
-            
-            setTimeout(() => {
+
+            const closeNotification = () => {
                 notification.style.opacity = '0';
                 setTimeout(() => notification.remove(), 500);
-            }, 3000);
+            };
+            notification.addEventListener('click', closeNotification, { once: true });
+            notification.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    closeNotification();
+                }
+            }, { once: true });
         }
         
         function getFormStatus() {

@@ -35,6 +35,54 @@
             backdrop-filter: blur(3px);
             z-index: 50;
         }
+
+        .thank-you-modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+            background: rgba(3, 9, 18, 0.82);
+            backdrop-filter: blur(4px);
+            z-index: 60;
+        }
+
+        .thank-you-modal[hidden] {
+            display: none;
+        }
+
+        .thank-you-card {
+            width: min(100%, 520px);
+            padding: 28px 22px;
+            border: 1px solid #60A5FA;
+            border-radius: 14px;
+            background: linear-gradient(145deg, #173F70 0%, #0B1220 100%);
+            color: #EAF5FF;
+            text-align: center;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        .thank-you-card h2 {
+            margin-bottom: 16px;
+            color: #BFDBFE;
+        }
+
+        .thank-you-card p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .thank-you-total {
+            margin-top: 18px !important;
+            color: #BFDBFE;
+            font-size: 18px !important;
+        }
+
+        .thank-you-button {
+            margin-top: 18px;
+            background: #2563EB;
+        }
         
         .container {
             width: 100%;
@@ -511,18 +559,32 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             -webkit-box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             -moz-box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
         }
         
         .notification.success {
-            background: #16A34A;
+            background: #166534;
+            color: #F0FDF4;
+            font-weight: 600;
         }
         
         .notification.error {
             background: #DC2626;
+            color: #FFFFFF;
         }
         
         .notification.warning {
-            background: #D97706;
+            background: #92400E;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+
+        .notification.duplicate {
+            background: #7F1D1D;
+            color: #FEF2F2;
+            border: 2px solid #FCA5A5;
+            font-weight: 700;
+            box-shadow: 0 4px 16px rgba(127, 29, 29, 0.5);
         }
         
         .file-input-container {
