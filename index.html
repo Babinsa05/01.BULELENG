@@ -142,7 +142,11 @@
         let currentFile = null;
         let fileIsValid = false;
         let lastAutoDateNarration = "";
-        let submittedBabinsas = JSON.parse(localStorage.getItem("dukopsSubmittedBabinsas") || "[]");
+        let submittedBabinsas = JSON.parse(localStorage.getItem("dukopsSubmittedBabinsas") || "[]")
+            .map(entry => typeof entry === "string"
+                ? { desa: entry, date: null }
+                : entry)
+            .filter(entry => entry && typeof entry.desa === "string");
         const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         function getDeviceZoneLabel(date = new Date()) {
@@ -1018,9 +1022,21 @@
                 return;
             }
 
+            const groupedReports = submittedBabinsas.reduce((groups, report) => {
+                const date = report.date ? new Date(report.date) : null;
+                const monthYear = date && !Number.isNaN(date.getTime())
+                    ? formatIndonesiaDate(date, { month: "long", year: "numeric" })
+                    : "Periode sebelumnya";
+                const key = `${report.desa}|${monthYear}`;
+                if (!groups[key]) {
+                    groups[key] = { desa: report.desa, monthYear, count: 0 };
+                }
+                groups[key].count += 1;
+                return groups;
+            }, {});
             const totalReports = submittedBabinsas.length;
-            const reportMessages = submittedBabinsas
-                .map(desa => `<p>Terima kasih kepada <strong>Babinsa ${desa}</strong> telah mengirim laporan.</p>`)
+            const reportMessages = Object.values(groupedReports)
+                .map(report => `<p>Terima kasih kepada <strong>Babinsa ${report.desa}</strong> telah mengirim <strong>${report.count} laporan</strong> untuk bulan <strong>${report.monthYear}</strong>.</p>`)
                 .join("");
             thankYouMessages.innerHTML = `
                 ${reportMessages}
@@ -1301,7 +1317,7 @@
                 updateCounter();
                 saveSubmittedDate(tanggalWaktu);
                 addSendLog(`${files.baseName}.png dan ${files.baseName}.txt`, "success");
-                submittedBabinsas.push(selectedDesa);
+                submittedBabinsas.push({ desa: selectedDesa, date: tanggalWaktu });
                 localStorage.setItem("dukopsSubmittedBabinsas", JSON.stringify(submittedBabinsas));
             } catch (error) {
                 console.error("Gagal membuat file laporan:", error);
