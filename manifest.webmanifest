@@ -1,7 +1,7 @@
 {
   "name": "DUKOPS BABINSA",
   "short_name": "DUKOPS",
-  "description": "Sistem pelaporan kegiatan DUKOPS BABINSA.",
+  "description": "Sistem pelaporan kegiatan Babinsa.",
   "lang": "id-ID",
   "start_url": "./",
   "scope": "./",

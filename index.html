@@ -1,26 +1,22 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>DUKOPS BABINSA - Sistem Pelaporan</title>
+    <meta name="description" content="Sistem pelaporan kegiatan.">
+    <title>Sistem Pelaporan</title>
     <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
     <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
-    <script>
-        if (window.location.protocol !== 'file:') {
-            document.write('<link rel="manifest" href="manifest.webmanifest">');
-        }
-
-    </script>
+    <link id="appManifest" rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#0B1220">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    <script src="app.js"></script>
+    <script src="js/services.js"></script>
 </head>
 <body>
     <button id="installPwaButton" type="button">
@@ -53,6 +49,17 @@
         </div>
     </div>
 
+    <div id="attendanceModal" class="thank-you-modal" hidden>
+        <div class="thank-you-card attendance-card">
+            <img class="modal-logo" src="logo/logo-1.png" alt="Lambang TNI Angkatan Darat">
+            <h2>Absensi Laporan</h2>
+            <div id="attendanceMessages" aria-live="polite">
+                <p><i class="fas fa-spinner fa-spin"></i> Memuat jumlah laporan...</p>
+            </div>
+            <button type="button" class="thank-you-button" onclick="closeAttendanceModal()">Tutup</button>
+        </div>
+    </div>
+
     <!-- Main Container -->
     <div class="container">
         <div id="printable-area">
@@ -61,7 +68,7 @@
                     <img
                         class="header-image-full"
                         src="header/header.png"
-                        alt="Header DUKOPS BABINSA"
+                        alt="Header aplikasi"
                     >
                     <div id="headerDesaLabel" class="header-desa-label" aria-live="polite"></div>
                 </div>
@@ -111,6 +118,9 @@
                 <button id="submitBtn" class="combined-button" onclick="processSubmission()" disabled>
                     <i class="fas fa-cloud-upload-alt"></i> SIMPAN
                 </button>
+                <button id="attendanceBtn" class="attendance-button" type="button" onclick="showAttendance()">
+                    <i class="fas fa-clipboard-check"></i> ABSENSI
+                </button>
                 <button id="exitBtn" class="exit-button" type="button" onclick="exitApplication()">
                     <i class="fas fa-sign-out-alt"></i> KELUAR
                 </button>
@@ -122,7 +132,7 @@
     <script>
         // ================= KONFIGURASI UTAMA =================
         const LOCAL_DATA_URL = "data/desa/desa dan kelurahan.json";
-        const APP_CONFIG_URL = "data/app-config.json";
+        const APP_CONFIG_URL = "config/app-config.json";
         
         // ================= KONFIGURASI VALIDASI FOTO =================
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -142,11 +152,8 @@
         let currentFile = null;
         let fileIsValid = false;
         let lastAutoDateNarration = "";
-        let submittedBabinsas = JSON.parse(localStorage.getItem("dukopsSubmittedBabinsas") || "[]")
-            .map(entry => typeof entry === "string"
-                ? { desa: entry, date: null }
-                : entry)
-            .filter(entry => entry && typeof entry.desa === "string");
+        // Ucapan penutup hanya menghitung laporan pada sesi aplikasi saat ini.
+        let submittedBabinsas = [];
         const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         function getDeviceZoneLabel(date = new Date()) {
@@ -200,7 +207,7 @@
         let unreadMessages = 0;
         let chatHistory = [];
         let ignoredMessageIds = new Set();
-        let chatMode = 'mang'; // 'mang', 'bot', 'both'
+        let chatMode = 'bot';
         const POLL_INTERVAL = 3000;
         const CHAT_HISTORY_KEY = 'dukops_chat_history';
         const MAX_CHAT_HISTORY = 100;
@@ -239,20 +246,14 @@
             // Show notification
             let modeText = '';
             switch(mode) {
-                case 'mang':
-                    modeText = 'Mengirim ke @MangSatria79 saja';
-                    break;
                 case 'bot':
                     modeText = 'Mengirim ke Bot Asisten saja';
-                    break;
-                case 'both':
-                    modeText = 'Mengirim ke @MangSatria79 dan Bot';
                     break;
             }
             
             addChatMessage({
                 type: 'system',
-                text: `ðŸ“¡ Mode chat: ${modeText}`,
+                text: `Ã°Å¸â€œÂ¡ Mode chat: ${modeText}`,
                 timestamp: new Date().toISOString()
             });
             
@@ -261,14 +262,14 @@
         }
         
         function initChatSystem() {
-            console.log('ðŸ’¬ Initializing hybrid chat system...');
+            console.log('Ã°Å¸â€™Â¬ Initializing hybrid chat system...');
             
             // Load chat mode preference
             const savedMode = localStorage.getItem('dukops_chat_mode');
             if (savedMode) {
-                setChatMode(savedMode);
+                setChatMode('bot');
             } else {
-                setChatMode('mang');
+                setChatMode('bot');
             }
             
             // Update desa badge
@@ -405,7 +406,7 @@
                                 
                                 if (isAutoReply || isFromBot) {
                                     ignoredMessageIds.add(msgId);
-                                    console.log('ðŸ”‡ Ignored auto-reply');
+                                    console.log('Ã°Å¸â€â€¡ Ignored auto-reply');
                                     return;
                                 }
                                 
@@ -447,11 +448,7 @@
             const senderId = message.from.id;
             const chatId = message.chat.id;
             
-            // Tentukan apakah ini dari MangSatria79 atau user lain
             let senderDisplay = senderName;
-            if (senderId == TELEGRAM_CHAT_ID) {
-                senderDisplay = 'ðŸ‘‘ ' + senderName + ' (MangSatria79)';
-            }
             
             // Tampilkan di chat
             addChatMessage({
@@ -467,7 +464,7 @@
                 updateUnreadCounter();
             }
             
-            // Handle command jika dari MangSatria79
+            // Handle command dari pengguna yang diizinkan
             if (senderId == TELEGRAM_CHAT_ID) {
                 handleIncomingCommand(messageText, senderName, chatId);
             }
@@ -478,15 +475,14 @@
         function handleIncomingCommand(message, sender, chatId) {
             const lowerMsg = message.toLowerCase().trim();
             
-            // Hanya MangSatria79 yang bisa reset
             if (lowerMsg === 'reset' && chatId == TELEGRAM_CHAT_ID) {
                 resetForm();
-                sendTelegramReply(chatId, 'âœ… Form telah direset oleh MangSatria79.');
+                sendTelegramReply(chatId, 'Ã¢Å“â€¦ Form telah direset.');
             }
             
             // Auto-reply untuk pesan tertentu
             if (lowerMsg === 'status') {
-                sendTelegramReply(chatId, `ðŸ“Š Status Form: ${getFormStatus()}\nðŸ“ˆ Total: ${submissionCount} laporan`);
+                sendTelegramReply(chatId, `Ã°Å¸â€œÅ  Status Form: ${getFormStatus()}\nÃ°Å¸â€œË† Total: ${submissionCount} laporan`);
             }
         }
         
@@ -501,7 +497,7 @@
             if (!selectedDesa) {
                 addChatMessage({
                     type: 'error',
-                    text: 'âŒ Silakan pilih desa/kelurahan terlebih dahulu!',
+                    text: 'Ã¢ÂÅ’ Silakan pilih desa/kelurahan terlebih dahulu!',
                     timestamp: timestamp
                 });
                 return;
@@ -525,40 +521,20 @@
                 let modeText = '';
                 
                 // Format pesan dengan identitas desa
-                const messageWithIdentity = `ðŸ’¬ Pesan dari Babinsa ${selectedDesa} (Form DUKOPS):\n${message}`;
                 const simpleMessage = `Babinsa ${selectedDesa}: ${message}`;
                 
-                if (chatMode === 'mang' || chatMode === 'both') {
-                    // Kirim ke @MangSatria79 dengan identitas
-                    promises.push(
-                        fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                chat_id: TELEGRAM_CHAT_ID,
-                                text: messageWithIdentity,
-                                parse_mode: 'Markdown'
-                            })
+                promises.push(
+                    fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            chat_id: TELEGRAM_CHAT_ID,
+                            text: simpleMessage,
+                            parse_mode: 'Markdown'
                         })
-                    );
-                    modeText += '@MangSatria79 ';
-                }
-                
-                if (chatMode === 'bot' || chatMode === 'both') {
-                    // Kirim ke bot dengan identitas
-                    promises.push(
-                        fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                chat_id: TELEGRAM_CHAT_ID,
-                                text: simpleMessage,
-                                parse_mode: 'Markdown'
-                            })
-                        })
-                    );
-                    modeText += 'Bot ';
-                }
+                    })
+                );
+                modeText = 'Bot ';
                 
                 // Tunggu semua kiriman selesai
                 const results = await Promise.allSettled(promises);
@@ -569,14 +545,14 @@
                 if (successCount === 0) {
                     addChatMessage({
                         type: 'error',
-                        text: 'âŒ Gagal mengirim pesan',
+                        text: 'Ã¢ÂÅ’ Gagal mengirim pesan',
                         timestamp: new Date().toISOString()
                     });
                 } else {
                     // Tampilkan info pengiriman berhasil
                     addChatMessage({
                         type: 'system',
-                        text: `âœ… Pesan terkirim ke: ${modeText.trim()}\nðŸ“‹ Identitas: Babinsa ${selectedDesa}`,
+                        text: `Ã¢Å“â€¦ Pesan terkirim ke: ${modeText.trim()}\nÃ°Å¸â€œâ€¹ Identitas: Babinsa ${selectedDesa}`,
                         timestamp: new Date().toISOString()
                     });
                 }
@@ -584,7 +560,7 @@
             } catch (error) {
                 addChatMessage({
                     type: 'error',
-                    text: 'âš ï¸ Koneksi error. Periksa internet Anda.',
+                    text: 'Ã¢Å¡Â Ã¯Â¸Â Koneksi error. Periksa internet Anda.',
                     timestamp: new Date().toISOString()
                 });
             }
@@ -704,7 +680,7 @@
             
             switch(status) {
                 case 'connected':
-                    statusElement.innerHTML = `<i class="fas fa-circle status-icon connected"></i> Terhubung ke ${TELEGRAM_MANG_USERNAME} & ${TELEGRAM_BOT_NAME}`;
+                    statusElement.innerHTML = `<i class="fas fa-circle status-icon connected"></i> Terhubung ke Bot Asisten`;
                     break;
                 case 'disconnected':
                     statusElement.innerHTML = `<i class="fas fa-circle status-icon disconnected"></i> Offline`;
@@ -730,7 +706,7 @@
             
             if (!fileInput.files || fileInput.files.length === 0) {
                 validationMsg.className = "validation-message validation-warning";
-                validationMsg.textContent = "âš ï¸ Silakan pilih file gambar";
+                validationMsg.textContent = "Ã¢Å¡Â Ã¯Â¸Â Silakan pilih file gambar";
                 return;
             }
             
@@ -739,7 +715,7 @@
             // Validasi 1: Tipe file
             if (!ALLOWED_TYPES.includes(currentFile.type)) {
                 validationMsg.className = "validation-message validation-error";
-                validationMsg.textContent = `âŒ Format file tidak didukung. Gunakan: JPEG, PNG, GIF, WebP`;
+                validationMsg.textContent = `Ã¢ÂÅ’ Format file tidak didukung. Gunakan: JPEG, PNG, GIF, WebP`;
                 fileInput.value = "";
                 return;
             }
@@ -747,7 +723,7 @@
             // Validasi 2: Ukuran file
             if (currentFile.size > MAX_FILE_SIZE) {
                 validationMsg.className = "validation-message validation-error";
-                validationMsg.textContent = `âŒ File terlalu besar (${formatFileSize(currentFile.size)}). Maksimal: ${formatFileSize(MAX_FILE_SIZE)}`;
+                validationMsg.textContent = `Ã¢ÂÅ’ File terlalu besar (${formatFileSize(currentFile.size)}). Maksimal: ${formatFileSize(MAX_FILE_SIZE)}`;
                 fileInput.value = "";
                 return;
             }
@@ -767,12 +743,12 @@
                     let statusClass = "";
                     
                     if (width < MIN_WIDTH || height < MIN_HEIGHT) {
-                        validationStatus = `âš ï¸ Resolusi rendah (min: ${MIN_WIDTH}Ã—${MIN_HEIGHT})`;
+                        validationStatus = `Ã¢Å¡Â Ã¯Â¸Â Resolusi rendah (min: ${MIN_WIDTH}Ãƒâ€”${MIN_HEIGHT})`;
                         statusClass = "validation-warning";
                         fileIsValid = false;
                         document.getElementById("canvas").style.display = "none";
                     } else {
-                        validationStatus = "âœ… Resolusi memadai";
+                        validationStatus = "Ã¢Å“â€¦ Resolusi memadai";
                         statusClass = "validation-success";
                         fileIsValid = true;
                         document.getElementById("canvas").style.display = "block";
@@ -796,7 +772,7 @@
                 img.onerror = function() {
                     document.getElementById("canvas").style.display = "none";
                     validationMsg.className = "validation-message validation-error";
-                    validationMsg.textContent = "âŒ Gagal memuat gambar. File mungkin rusak.";
+                    validationMsg.textContent = "Ã¢ÂÅ’ Gagal memuat gambar. File mungkin rusak.";
                     fileInput.value = "";
                     fileIsValid = false;
                 };
@@ -841,7 +817,7 @@
             if (selectedDesa) {
                 addChatMessage({
                     type: 'system',
-                    text: `ðŸ“ Identitas diatur: <strong>${babinsaIdentity}</strong><br>Nama ini akan muncul di semua pesan chat.`,
+                    text: `Ã°Å¸â€œÂ Identitas diatur: <strong>${babinsaIdentity}</strong><br>Nama ini akan muncul di semua pesan chat.`,
                     timestamp: new Date().toISOString()
                 });
             }
@@ -866,7 +842,7 @@
                 
             } catch (error) {
                 console.error("Error:", error);
-                showNotification("âŒ Gagal memuat koordinat", "error");
+                showNotification("Ã¢ÂÅ’ Gagal memuat koordinat", "error");
             } finally {
                 loading.style.display = 'none';
                 updatePreview();
@@ -879,12 +855,12 @@
         
         function pickRandomKoordinat() {
             if (kordinatList.length === 0) {
-                showNotification("âš ï¸ Tidak ada data koordinat", "warning");
+                showNotification("Ã¢Å¡Â Ã¯Â¸Â Tidak ada data koordinat", "warning");
                 return;
             }
             
             if (!selectedDesa) {
-                showNotification("âš ï¸ Pilih desa terlebih dahulu", "warning");
+                showNotification("Ã¢Å¡Â Ã¯Â¸Â Pilih desa terlebih dahulu", "warning");
                 return;
             }
             
@@ -1052,6 +1028,42 @@
                     showNotification("Silakan tutup tab atau jendela aplikasi secara manual.", "warning");
                 }
             }, 150);
+        }
+
+        async function showAttendance() {
+            const modal = document.getElementById("attendanceModal");
+            const messages = document.getElementById("attendanceMessages");
+            if (!modal || !messages) return;
+
+            if (!selectedDesa) {
+                showNotification("Pilih desa/kelurahan terlebih dahulu.", "warning");
+                return;
+            }
+
+            modal.hidden = false;
+            messages.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Memuat jumlah laporan...</p>';
+            const attendanceButton = document.getElementById("attendanceBtn");
+            if (attendanceButton) attendanceButton.disabled = true;
+
+            try {
+                const count = await window.getAttendanceCount(selectedDesa);
+                messages.innerHTML = `
+                    <p>Jumlah laporan yang sudah dikirim untuk:</p>
+                    <strong>${selectedDesa}</strong>
+                    <strong class="attendance-count">${count}</strong>
+                    <p>Data diperbarui langsung dari Supabase.</p>
+                `;
+            } catch (error) {
+                console.error("Gagal memuat absensi:", error);
+                messages.innerHTML = "<p>Data absensi belum dapat dimuat. Periksa konfigurasi Supabase dan koneksi internet.</p>";
+            } finally {
+                if (attendanceButton) attendanceButton.disabled = false;
+            }
+        }
+
+        function closeAttendanceModal() {
+            const modal = document.getElementById("attendanceModal");
+            if (modal) modal.hidden = true;
         }
 
         function updateLiveSeconds() {
@@ -1318,7 +1330,12 @@
                 saveSubmittedDate(tanggalWaktu);
                 addSendLog(`${files.baseName}.png dan ${files.baseName}.txt`, "success");
                 submittedBabinsas.push({ desa: selectedDesa, date: tanggalWaktu });
-                localStorage.setItem("dukopsSubmittedBabinsas", JSON.stringify(submittedBabinsas));
+                try {
+                    await window.recordAttendance(selectedDesa, new Date(tanggalWaktu));
+                } catch (attendanceError) {
+                    console.error("Gagal menyimpan absensi Supabase:", attendanceError);
+                    showNotification("Laporan tersimpan, tetapi absensi Supabase gagal diperbarui.", "warning");
+                }
             } catch (error) {
                 console.error("Gagal membuat file laporan:", error);
                 addSendLog(`${getSubmissionBaseName()}.png dan ${getSubmissionBaseName()}.txt`, "failed", error.message);
@@ -1334,13 +1351,44 @@
         function updateDesaHeaderImage(desaName) {
             const headerImage = document.getElementById('desaHeaderImage');
             if (!headerImage) return;
-            if (!desaName) {
-                headerImage.src = 'https://github.com/Koramil05/DUKOPS/blob/main/bnr_default.png?raw=true';
-                return;
-            }
-            
-            const imageName = desaName.toLowerCase().replace(/\s+/g, '_');
-            headerImage.src = `https://github.com/Koramil05/DUKOPS/blob/main/bnr_${imageName}.png?raw=true`;
+            // Header utama bersifat umum dan tidak bergantung pada nama Koramil.
+            headerImage.src = 'header/header.png';
+        }
+
+        function updateInstallManifest(config) {
+            const manifestLink = document.getElementById("appManifest");
+            if (!manifestLink || !config) return;
+
+            const manifest = {
+                name: config.appName || config.headerTitle,
+                short_name: config.shortName || config.appName || config.headerTitle,
+                description: config.description || "Sistem pelaporan kegiatan.",
+                lang: "id-ID",
+                start_url: "./",
+                scope: "./",
+                display: "standalone",
+                orientation: "portrait",
+                background_color: "#0B1220",
+                theme_color: "#0B1220",
+                icons: [
+                    {
+                        src: "icons/android-chrome-192x192.png",
+                        sizes: "192x192",
+                        type: "image/png",
+                        purpose: "any"
+                    },
+                    {
+                        src: "icons/android-chrome-512x512.png",
+                        sizes: "512x512",
+                        type: "image/png",
+                        purpose: "any"
+                    }
+                ]
+            };
+            manifestLink.href = URL.createObjectURL(new Blob(
+                [JSON.stringify(manifest)],
+                { type: "application/manifest+json" }
+            ));
         }
 
         async function loadAppConfig() {
@@ -1363,14 +1411,18 @@
             }
 
             const config = await response.json();
+            const appName = typeof config.appName === "string" ? config.appName.trim() : "";
+            const headerTitle = typeof config.headerTitle === "string" && config.headerTitle.trim()
+                ? config.headerTitle.trim()
+                : appName;
             const fields = [
-                ["headerTitle", config.headerTitle],
+                ["headerTitle", headerTitle],
                 ["headerUnit", config.headerUnit],
                 ["headerAddress", config.headerAddress ?? ""]
             ];
             fields.forEach(([id, value]) => {
                 const text = typeof value === "string" ? value.trim() : "";
-                if ((id === "headerTitle" || id === "headerUnit") && (!text)) {
+                if ((id === "headerTitle" || id === "headerUnit") && !text) {
                     throw new Error(`Konfigurasi ${id} tidak valid`);
                 }
                 const element = document.getElementById(id);
@@ -1378,6 +1430,12 @@
                     element.textContent = text;
                 }
             });
+            document.title = `${appName || headerTitle} - Sistem Pelaporan`;
+            document.querySelector('meta[name="description"]')?.setAttribute(
+                "content",
+                config.description || "Sistem pelaporan kegiatan."
+            );
+            updateInstallManifest(config);
         }
 
         async function initialize() {
@@ -1453,12 +1511,12 @@
                 populateDesaOptions(desaFiles, select);
 
                 if (desaFiles.length === 0) {
-                    showNotification("⚠️ Belum ada data desa lokal", "warning");
+                    showNotification("âš ï¸ Belum ada data desa lokal", "warning");
                 }
 
             } catch (error) {
                 console.error("Error:", error);
-                showNotification("✝ Gagal memuat daftar desa", "error");
+                showNotification("âœ Gagal memuat daftar desa", "error");
             } finally {
                 loading.style.display = 'none';
             }
@@ -1516,7 +1574,7 @@
             // Tambahkan notifikasi di chat
             addChatMessage({
                 type: 'system',
-                text: 'ðŸ”„ Form telah direset. Silakan pilih desa/kelurahan kembali.',
+                text: 'Ã°Å¸â€â€ž Form telah direset. Silakan pilih desa/kelurahan kembali.',
                 timestamp: new Date().toISOString()
             });
             
@@ -1562,9 +1620,9 @@
         }
         
         function getFormStatus() {
-            const desa = selectedDesa ? 'âœ… Desa terpilih' : 'âŒ Belum pilih desa';
-            const gambar = fileIsValid ? 'âœ… Gambar valid' : 'âŒ Gambar belum valid';
-            const narasi = document.getElementById('narasi').value ? 'âœ… Narasi diisi' : 'âŒ Belum narasi';
+            const desa = selectedDesa ? 'Ã¢Å“â€¦ Desa terpilih' : 'Ã¢ÂÅ’ Belum pilih desa';
+            const gambar = fileIsValid ? 'Ã¢Å“â€¦ Gambar valid' : 'Ã¢ÂÅ’ Gambar belum valid';
+            const narasi = document.getElementById('narasi').value ? 'Ã¢Å“â€¦ Narasi diisi' : 'Ã¢ÂÅ’ Belum narasi';
             
             return `${desa}, ${gambar}, ${narasi}`;
         }
@@ -1694,7 +1752,7 @@
                 
                 resetForm();
                 
-                showNotification("âœ… Data berhasil direset", "success");
+                showNotification("Ã¢Å“â€¦ Data berhasil direset", "success");
             }
         }
 

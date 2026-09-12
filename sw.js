@@ -1,12 +1,12 @@
-const CACHE_NAME = "dukops-babinsa-v21";
+const CACHE_NAME = "sistem-pelaporan-v22";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./app.js",
+  "./js/services.js",
   "./manifest.webmanifest",
   "./data/README.txt",
   "./data/desa/desa dan kelurahan.json",
-  "./data/app-config.json",
+  "./config/app-config.json",
   "./data/webhook.json",
   "./icons/favicon.ico",
   "./icons/favicon-16x16.png",
@@ -47,10 +47,10 @@ self.addEventListener("fetch", event => {
 
   const requestUrl = new URL(event.request.url);
   const alwaysFresh = requestUrl.pathname.includes("/data/desa/") ||
-    requestUrl.pathname.endsWith("/data/app-config.json") ||
+    requestUrl.pathname.endsWith("/config/app-config.json") ||
     requestUrl.pathname.endsWith("/data/webhook.json") ||
     requestUrl.pathname.endsWith("/index.html") ||
-    requestUrl.pathname.endsWith("/app.js") ||
+    requestUrl.pathname.endsWith("/js/services.js") ||
     requestUrl.pathname.endsWith("/style.css") ||
     requestUrl.pathname.endsWith("/manifest.webmanifest") ||
     requestUrl.pathname.endsWith("/sw.js");

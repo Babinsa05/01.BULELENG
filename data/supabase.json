@@ -1,0 +1,9 @@
+{
+  "url": "https://exydiprhwqxsjmxrbhiht.supabase.co",
+  "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV4eWRpcHJod3F4c2ptcnhiaWh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMjA3MTcsImV4cCI6MjEwNDc5NjcxN30.OF4zF4nvcmDv58JARNJI2aUIF0CObR4m1W_xQbL2SO8",
+  "table": "absensi",
+  "desaColumn": "desa",
+  "monthColumn": "bulan",
+  "yearColumn": "tahun",
+  "countColumn": "jumlah_laporan"
+}
