@@ -1,4 +1,4 @@
-const ROOT_FOLDER_ID = "ISI_ID_FOLDER_DRIVE_BARU_DI_SINI";
+const ROOT_FOLDER_ID = "101GdXpFdZtKMnQKZJE-VkIkIdEAkzGHG";
 
 function doPost(event) {
   try {
@@ -53,7 +53,7 @@ function getOrCreateFolderPath(rootFolder, folderPath) {
 
 function sanitizeFolderName(value) {
   const sanitized = String(value)
-    .replace(/[\\/:*?"<>|#%{}~&]/g, " ")
+    .replace(/[\\/:*?\"<>|#%{}~&]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
   if (!sanitized) throw new Error("Nama folder tidak valid");

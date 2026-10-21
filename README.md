@@ -11,27 +11,26 @@ css/
   base.css              Style dasar dan layout utama
   components.css        Style tombol, modal, dan komponen tambahan
 js/
-  services.js           Supabase, webhook, dan upload Google Drive
+  services.js           Webhook dan upload Google Drive
 data/
-  supabase.json         Konfigurasi absensi Supabase
-  supabase/
-    schema.sql          Struktur tabel absensi Supabase
+  webhook.json          URL publish Google Apps Script backend
   desa/                 Daftar desa dan data koordinat
-  google-apps-script/   Backend Google Apps Script
+  google-apps-script/   Backend Google Apps Script untuk upload file
 header/                 Gambar header aplikasi
 logo/                   Logo dan lisensi aset
 icons/                  Ikon PWA dan favicon
 tools/                  Script bantuan pengembangan lokal
 ```
 
-## Konfigurasi tombol Absensi
+## Konfigurasi upload ke Google Drive
 
-Isi `data/supabase.json` dengan URL project Supabase dan **anon key**
-(jangan gunakan service-role key). Tombol absensi membaca rekap bulan berjalan
-berdasarkan `desa`, `bulan`, dan `tahun`.
+1. Buka file `data/webhook.json`.
+2. Isi `webhookUrl` dengan URL deployment Google Apps Script hasil publish.
+3. Pastikan backend Apps Script memiliki `ROOT_FOLDER_ID` yang menunjuk ke folder Google Drive tujuan.
+4. Folder target saat ini sudah diatur ke:
+   `101GdXpFdZtKMnQKZJE-VkIkIdEAkzGHG`
 
-Jalankan `data/supabase/schema.sql` di SQL Editor Supabase. Tabel `absensi`
-menyimpan rekap `desa`, `bulan`, `tahun`, dan `jumlah_laporan`.
+## Konfigurasi aplikasi
 
 Semua identitas aplikasi dikelola dari satu file:
 `config/app-config.json`. Ubah `appName` untuk memperbarui judul aplikasi,
