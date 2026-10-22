@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="description" content="Sistem pelaporan kegiatan.">
@@ -30,7 +30,7 @@
                 src="logo/logo-1.png"
                 alt="Lambang TNI Angkatan Darat"
             >
-            <select id="selectDesa" onchange="loadSelectedDesa()">
+            <select id="selectDesa" aria-label="Pilih desa atau kelurahan" onchange="loadSelectedDesa()">
                 <option value="">Pilih Desa/Kelurahan</option>
             </select>
             <div class="start-mode-description" aria-live="polite">
@@ -85,12 +85,16 @@
                         <input type="file" id="gambar" accept="image/*" onchange="validateAndPreviewImage()">
                         <div id="fileValidation" class="validation-message"></div>
                     </div>
-                    <div class="tanggal-input-kustom" role="button" tabindex="0" onclick="openDatePicker('tanggalTanggal')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openDatePicker('tanggalTanggal'); }">
-                        <label class="date-picker-label" for="tanggalTanggal">Tanggal</label>
+                    <div class="tanggal-input-kustom">
+                        <button class="date-picker-trigger" type="button" aria-label="Pilih tanggal" onclick="openDatePicker('tanggalTanggal')">
+                            <span class="date-picker-label">Tanggal</span>
+                        </button>
                         <input type="date" id="tanggalTanggal" lang="id" aria-label="Pilih tanggal" onchange="syncDateTimeInputs()" oninput="syncDateTimeInputs()">
                     </div>
-                    <div class="waktu-input-kustom" role="button" tabindex="0" onclick="openDatePicker('tanggalJam')" onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openDatePicker('tanggalJam'); }">
-                        <label class="date-picker-label" for="tanggalJam">Waktu</label>
+                    <div class="waktu-input-kustom">
+                        <button class="date-picker-trigger" type="button" aria-label="Pilih waktu" onclick="openDatePicker('tanggalJam')">
+                            <span class="date-picker-label">Waktu</span>
+                        </button>
                         <input type="time" id="tanggalJam" step="1" lang="id" aria-label="Pilih waktu 24 jam" onchange="syncDateTimeInputs()" oninput="syncDateTimeInputs()">
                     </div>
                     <input type="text" id="tanggalWaktuDisplay" value="Pilih tanggal dan waktu" readonly aria-label="Tanggal dan waktu kegiatan">
@@ -146,6 +150,7 @@
         let lastAutoDateNarration = "";
         // Ucapan penutup hanya menghitung laporan pada sesi aplikasi saat ini.
         let submittedBabinsas = [];
+        let activeAccountId = "";
         const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
         function getDeviceZoneLabel(date = new Date()) {
@@ -793,6 +798,7 @@
                 return;
             }
             selectedDesa = select.options[select.selectedIndex].text.replace(/^\d+\.\s*/, '');
+            initializeAccountData(selectedDesa);
             const babinsaIdentity = getBabinsaIdentity(selectedDesa);
             updateDesaHeaderImage(selectedDesa);
             const headerDesaLabel = document.getElementById('headerDesaLabel');
@@ -953,8 +959,8 @@
             const picker = document.getElementById("tanggalWaktu");
             if (!dateInput || !timeInput || !picker) return;
 
-            const dateLabel = document.querySelector('label[for="tanggalTanggal"]');
-            const timeLabel = document.querySelector('label[for="tanggalJam"]');
+            const dateLabel = document.querySelector(".tanggal-input-kustom .date-picker-label");
+            const timeLabel = document.querySelector(".waktu-input-kustom .date-picker-label");
             if (dateLabel) {
                 dateLabel.textContent = dateInput.value
                     ? new Date(`${dateInput.value}T00:00:00`).toLocaleDateString("id-ID", {
@@ -1409,9 +1415,7 @@
                 return;
             }
 
-            initializeCounter();
             loadDesaList();
-            loadLastSubmittedDates();
             resetCanvas();
             
             const now = getIndonesiaDateParts();
@@ -1518,8 +1522,8 @@
             document.getElementById('tanggalWaktu').value = "";
             document.getElementById('tanggalTanggal').value = "";
             document.getElementById('tanggalJam').value = "";
-            document.querySelector('label[for="tanggalTanggal"]').textContent = "Tanggal";
-            document.querySelector('label[for="tanggalJam"]').textContent = "Waktu";
+            document.querySelector(".tanggal-input-kustom .date-picker-label").textContent = "Tanggal";
+            document.querySelector(".waktu-input-kustom .date-picker-label").textContent = "Waktu";
             document.getElementById('previewTanggal').textContent = "";
             
             // Reset validasi foto
@@ -1589,18 +1593,29 @@
 
         // ================= FUNGSI BANTUAN =================
         
-        function initializeCounter() {
-            const savedCount = localStorage.getItem('dukopsSubmissionCount');
+        function getAccountStorageKey(key, accountId = selectedDesa) {
+            if (!accountId) throw new Error("Pilih Desa/Kelurahan sebelum mengakses data akun");
+            return `dukopsAccountData:${encodeURIComponent(accountId)}:${key}`;
+        }
+
+        function initializeAccountData(accountId) {
+            if (!accountId || activeAccountId === accountId) return;
+            activeAccountId = accountId;
+
+            const savedCount = localStorage.getItem(getAccountStorageKey('submissionCount'));
             submissionCount = savedCount ? parseInt(savedCount) : 0;
-            const savedUploads = localStorage.getItem('dukopsSuccessfulUploadsByDate');
+            const savedUploads = localStorage.getItem(getAccountStorageKey('successfulUploadsByDate'));
             successfulUploadsByDate = savedUploads ? JSON.parse(savedUploads) : {};
+            loadLastSubmittedDates();
+            const logsContainer = document.getElementById("logTerkirim");
+            if (logsContainer) logsContainer.innerHTML = '';
             renderSuccessfulUploadCounter();
             loadSendLogs();
         }
 
         function updateCounter() {
             submissionCount++;
-            localStorage.setItem('dukopsSubmissionCount', submissionCount.toString());
+            localStorage.setItem(getAccountStorageKey('submissionCount'), submissionCount.toString());
         }
 
         function recordSuccessfulUpload() {
@@ -1608,7 +1623,7 @@
             const { year, month, day } = getIndonesiaDateParts(now);
             const dateKey = `${year}-${month}-${day}`;
             successfulUploadsByDate[dateKey] = (successfulUploadsByDate[dateKey] || 0) + 1;
-            localStorage.setItem('dukopsSuccessfulUploadsByDate', JSON.stringify(successfulUploadsByDate));
+            localStorage.setItem(getAccountStorageKey('successfulUploadsByDate'), JSON.stringify(successfulUploadsByDate));
             renderSuccessfulUploadCounter();
         }
 
@@ -1655,14 +1670,15 @@
         }
 
         function saveSendLog(filename, status, time) {
-            let logs = JSON.parse(localStorage.getItem('dukopsSendLogs') || '[]');
+            const storageKey = getAccountStorageKey('sendLogs');
+            let logs = JSON.parse(localStorage.getItem(storageKey) || '[]');
             logs.unshift({ filename, status, time });
             if (logs.length > 50) logs = logs.slice(0, 50);
-            localStorage.setItem('dukopsSendLogs', JSON.stringify(logs));
+            localStorage.setItem(storageKey, JSON.stringify(logs));
         }
 
         function loadSendLogs() {
-            const logs = JSON.parse(localStorage.getItem('dukopsSendLogs') || '[]');
+            const logs = JSON.parse(localStorage.getItem(getAccountStorageKey('sendLogs')) || '[]');
             const container = document.getElementById("logTerkirim");
             if (!container) return;
             
@@ -1687,7 +1703,7 @@
                 date: dateStr,
                 dateKey: getSubmissionDateKey(dateStr)
             });
-            localStorage.setItem('dukopsSubmittedDates', JSON.stringify(submittedDates));
+            localStorage.setItem(getAccountStorageKey('submittedDates'), JSON.stringify(submittedDates));
         }
 
         function getSubmissionDateKey(dateStr) {
@@ -1716,8 +1732,18 @@
         }
 
         function loadLastSubmittedDates() {
-            const savedDates = localStorage.getItem('dukopsSubmittedDates');
-            submittedDates = savedDates ? JSON.parse(savedDates) : [];
+            const storageKey = getAccountStorageKey('submittedDates');
+            const savedDates = localStorage.getItem(storageKey);
+            if (savedDates) {
+                submittedDates = JSON.parse(savedDates);
+                return;
+            }
+
+            const legacyDates = JSON.parse(localStorage.getItem('dukopsSubmittedDates') || '[]');
+            submittedDates = legacyDates.filter(entry => entry && entry.desa === selectedDesa);
+            if (submittedDates.length) {
+                localStorage.setItem(storageKey, JSON.stringify(submittedDates));
+            }
         }
 
         function resetCanvas() {
@@ -1733,17 +1759,17 @@
         function resetAll() {
             if (confirm("Reset semua data?")) {
                 submissionCount = 0;
-                localStorage.setItem('dukopsSubmissionCount', '0');
+                localStorage.setItem(getAccountStorageKey('submissionCount'), '0');
                 
-                localStorage.removeItem('dukopsSendLogs');
+                localStorage.removeItem(getAccountStorageKey('sendLogs'));
                 const logsContainer = document.getElementById('logTerkirim');
                 if (logsContainer) logsContainer.innerHTML = '';
                 
                 submittedDates = [];
-                localStorage.removeItem('dukopsSubmittedDates');
+                localStorage.removeItem(getAccountStorageKey('submittedDates'));
 
                 successfulUploadsByDate = {};
-                localStorage.removeItem('dukopsSuccessfulUploadsByDate');
+                localStorage.removeItem(getAccountStorageKey('successfulUploadsByDate'));
                 renderSuccessfulUploadCounter();
                 
                 resetForm();

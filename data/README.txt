@@ -78,14 +78,12 @@ dan project Apps Script baru, lalu ikuti panduan di:
 Upload akan membuat struktur:
 
   Folder Drive Baru/
-    Tahun/
-      Bulan/
-        Desa/
-        Nama Desa/
-          file.zip
-        Kelurahan/
-        Nama Kelurahan/
-          file.zip
+    ID Akun (Desa/Kelurahan)/
+      Tahun/
+        Bulan/
+          Desa atau Kelurahan/
+            Nama wilayah/
+              file.zip
 
 Nama ZIP menggunakan wilayah dan tanggal laporan yang dipilih.
 

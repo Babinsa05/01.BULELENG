@@ -34,6 +34,7 @@ function doPost(event) {
 }
 
 function buildFolderPath(params) {
+  const accountId = requireValue(params.accountId, "accountId");
   const regionType = params.regionType === "Kelurahan" ? "Kelurahan" : "Desa";
   const wilayah = requireValue(params.folderName || params.desaName, "folderName")
     .replace(new RegExp("^" + regionType + "\\s+", "i"), "")
@@ -41,7 +42,7 @@ function buildFolderPath(params) {
   const year = requireValue(params.year, "year");
   const month = requireValue(params.month, "month");
 
-  return [year, month, regionType, wilayah].map(sanitizeFolderName);
+  return [accountId, year, month, regionType, wilayah].map(sanitizeFolderName);
 }
 
 function getOrCreateFolderPath(rootFolder, folderPath) {

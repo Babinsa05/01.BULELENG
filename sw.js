@@ -1,8 +1,9 @@
-const CACHE_NAME = "sistem-pelaporan-v22";
+const CACHE_NAME = "sistem-pelaporan-v24";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./js/services.js",
+  "./js/running.js",
   "./manifest.webmanifest",
   "./data/README.txt",
   "./data/desa/desa dan kelurahan.json",
@@ -51,6 +52,7 @@ self.addEventListener("fetch", event => {
     requestUrl.pathname.endsWith("/data/webhook.json") ||
     requestUrl.pathname.endsWith("/index.html") ||
     requestUrl.pathname.endsWith("/js/services.js") ||
+    requestUrl.pathname.endsWith("/js/running.js") ||
     requestUrl.pathname.endsWith("/style.css") ||
     requestUrl.pathname.endsWith("/manifest.webmanifest") ||
     requestUrl.pathname.endsWith("/sw.js");

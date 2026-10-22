@@ -13,11 +13,16 @@ GOOGLE APPS SCRIPT BARU
 
 Struktur folder otomatis:
 Folder Drive Baru/
-  Tahun/
-    Bulan/
-      Desa atau Kelurahan/
-        Nama wilayah/
-          file.zip
+  ID Akun (Desa/Kelurahan)/
+    Tahun/
+      Bulan/
+        Desa atau Kelurahan/
+          Nama wilayah/
+            file.zip
+
+Setiap upload mengirim nama Desa/Kelurahan terpilih sebagai `accountId`.
+Counter, riwayat upload, dan tanggal kirim di browser juga disimpan terpisah
+per ID akun tersebut.
 
 Skrip ini tidak menggunakan folder Drive lama. Pastikan akun pemilik
 deployment memiliki akses Editor ke folder Drive baru.

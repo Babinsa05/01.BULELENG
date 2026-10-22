@@ -1,0 +1,59 @@
+PANDUAN MENJALANKAN APLIKASI DUKOPS
+===================================
+
+Integrasi upload berada di berkas JavaScript eksternal. index.html tetap
+menggunakan pemuat js/services.js yang sudah ada dan tidak perlu diubah.
+
+BERKAS YANG DIGUNAKAN
+---------------------
+
+js/services.js
+  Pemuat modul runtime dan penghubung fungsi upload ke aplikasi.
+
+js/running.js
+  Modul runtime untuk mengirim ZIP ke Google Apps Script. ID akun upload
+  menggunakan Desa/Kelurahan yang sedang dipilih.
+
+data/google-apps-script/Code.gs
+  Backend Google Apps Script yang menyimpan file pada folder Drive per akun.
+
+MENYIAPKAN GOOGLE APPS SCRIPT
+-----------------------------
+
+1. Buat folder Google Drive baru untuk aplikasi dan salin ID folder tersebut.
+2. Buka data/google-apps-script/Code.gs.
+3. Ganti nilai ROOT_FOLDER_ID dengan ID folder Drive baru.
+4. Salin Code.gs ke project Google Apps Script.
+5. Deploy sebagai Web app dengan Execute as: Me dan akses: Anyone.
+6. Salin URL Web app yang berakhiran /exec.
+7. Isi webhookUrl pada data/webhook.json menggunakan URL tersebut.
+8. Jika script pernah di-deploy sebelumnya, buat deployment versi baru.
+
+MENJALANKAN APLIKASI
+--------------------
+
+Jalankan aplikasi melalui HTTP/HTTPS, misalnya Cloudflare Pages atau server
+lokal. Jangan membuka index.html dengan alamat file:// karena aplikasi perlu
+membaca konfigurasi dan data melalui HTTP.
+
+Pastikan js/services.js dan js/running.js berada di folder js yang sama.
+Setelah memperbarui file, muat ulang aplikasi. Cache PWA aplikasi diperbarui
+melalui versi cache pada sw.js.
+
+PEMISAHAN DATA
+--------------
+
+Nama Desa/Kelurahan terpilih berfungsi sebagai ID akun. Data counter,
+riwayat, dan tanggal kirim di browser dipisahkan oleh aplikasi per ID ini.
+Upload Drive menggunakan struktur:
+
+Folder Drive/
+  Nama Desa atau Kelurahan/
+    Tahun/
+      Bulan/
+        Desa atau Kelurahan/
+          Nama wilayah/
+            file.zip
+
+Catatan: URL webhook harus HTTPS Google Apps Script yang valid. Jangan
+memasukkan kredensial atau token rahasia ke dalam berkas publik aplikasi.
