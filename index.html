@@ -111,6 +111,11 @@
                     <i class="fas fa-sign-out-alt"></i> KELUAR
                 </button>
             </div>
+            <div class="counter-container" aria-live="polite">
+                <div class="counter-label">Total file ZIP berhasil terkirim</div>
+                <div class="counter-value" id="successfulUploadCount">0</div>
+                <div class="counter-label" id="latestSuccessfulUpload">Belum ada file berhasil terkirim</div>
+            </div>
         </div>
         
     </div>
@@ -135,6 +140,7 @@
         let lastSubmittedDate = null;
         let submissionCount = 0;
         let submittedDates = [];
+        let successfulUploadsByDate = {};
         let currentFile = null;
         let fileIsValid = false;
         let lastAutoDateNarration = "";
@@ -1262,6 +1268,7 @@
                 const files = await createSubmissionFiles();
                 await downloadSubmissionFiles(files);
                 let driveUploaded = false;
+                let uploadErrorMessage = "Google Drive tidak mengonfirmasi keberhasilan upload.";
                 try {
                     const submission = await createSubmissionZip(files);
                     driveUploaded = await window.uploadToGoogleDrive(
@@ -1272,14 +1279,23 @@
                     );
                     if (driveUploaded) {
                         updateStoredFileTicker(`${submission.baseName}.zip`);
+                    } else {
+                        console.error(uploadErrorMessage);
                     }
                 } catch (uploadError) {
                     console.error("Upload Google Drive gagal:", uploadError);
+                    uploadErrorMessage = uploadError.message;
                 }
                 updateCounter();
-                saveSubmittedDate(tanggalWaktu);
-                addSendLog(`${files.baseName}.png dan ${files.baseName}.txt`, "success");
-                submittedBabinsas.push({ desa: selectedDesa, date: tanggalWaktu });
+                if (driveUploaded) {
+                    recordSuccessfulUpload();
+                    saveSubmittedDate(tanggalWaktu);
+                    addSendLog(`${files.baseName}.zip`, "success");
+                    submittedBabinsas.push({ desa: selectedDesa, date: tanggalWaktu });
+                } else {
+                    addSendLog(`${files.baseName}.zip`, "failed", uploadErrorMessage);
+                    showNotification("File laporan berhasil dibuat, tetapi belum berhasil dikirim ke Google Drive.", "warning");
+                }
             } catch (error) {
                 console.error("Gagal membuat file laporan:", error);
                 addSendLog(`${getSubmissionBaseName()}.png dan ${getSubmissionBaseName()}.txt`, "failed", error.message);
@@ -1576,12 +1592,44 @@
         function initializeCounter() {
             const savedCount = localStorage.getItem('dukopsSubmissionCount');
             submissionCount = savedCount ? parseInt(savedCount) : 0;
+            const savedUploads = localStorage.getItem('dukopsSuccessfulUploadsByDate');
+            successfulUploadsByDate = savedUploads ? JSON.parse(savedUploads) : {};
+            renderSuccessfulUploadCounter();
             loadSendLogs();
         }
 
         function updateCounter() {
             submissionCount++;
             localStorage.setItem('dukopsSubmissionCount', submissionCount.toString());
+        }
+
+        function recordSuccessfulUpload() {
+            const now = new Date();
+            const { year, month, day } = getIndonesiaDateParts(now);
+            const dateKey = `${year}-${month}-${day}`;
+            successfulUploadsByDate[dateKey] = (successfulUploadsByDate[dateKey] || 0) + 1;
+            localStorage.setItem('dukopsSuccessfulUploadsByDate', JSON.stringify(successfulUploadsByDate));
+            renderSuccessfulUploadCounter();
+        }
+
+        function renderSuccessfulUploadCounter() {
+            const countElement = document.getElementById("successfulUploadCount");
+            const latestElement = document.getElementById("latestSuccessfulUpload");
+            if (!countElement || !latestElement) return;
+
+            const successfulDates = Object.entries(successfulUploadsByDate)
+                .filter(([date, count]) => /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isInteger(count) && count > 0)
+                .sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
+            const totalCount = successfulDates.reduce((total, [, count]) => total + count, 0);
+            countElement.textContent = String(totalCount);
+            if (successfulDates.length === 0) {
+                latestElement.textContent = "Belum ada file berhasil terkirim";
+                return;
+            }
+
+            const [latestDate, latestCount] = successfulDates[0];
+            latestElement.textContent =
+                `Terakhir: ${formatSubmissionDate(latestDate)} — ${latestCount} file terkirim pada tanggal tersebut`;
         }
 
         function addSendLog(filename, status, message = "") {
@@ -1693,6 +1741,10 @@
                 
                 submittedDates = [];
                 localStorage.removeItem('dukopsSubmittedDates');
+
+                successfulUploadsByDate = {};
+                localStorage.removeItem('dukopsSuccessfulUploadsByDate');
+                renderSuccessfulUploadCounter();
                 
                 resetForm();
                 

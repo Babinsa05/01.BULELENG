@@ -1,15 +1,13 @@
 PANDUAN FOLDER DATA DUKOPS BABINSA
 ==================================
 
-Folder `data` berisi seluruh konfigurasi dan data yang dapat diubah tanpa
-mengedit `index.html`, `app.js`, atau `sw.js`.
+Folder `data` berisi data wilayah, konfigurasi webhook, dan panduan backend.
 
 STRUKTUR FOLDER
 ---------------
 
 data/
   README.txt
-  app-config.json
   webhook.json
   desa/
     desa dan kelurahan.json
@@ -54,15 +52,18 @@ aplikasi dibuka langsung dengan `file://`, jadi gunakan server HTTP/HTTPS.
 2. MENGUBAH IDENTITAS HEADER
 ----------------------------
 
-Edit `data/app-config.json`:
+Edit `config/app-config.json`:
 
   {
-    "headerTitle": "DUKOPS BABINSA",
-    "headerUnit": "KORAMIL 1609-05/SUKASADA",
-    "headerAddress": "Jl. Jelantik Gingsir No. 32 Sukasada Singaraja-Bali 81161"
+    "appName": "DUKOPS BABINSA",
+    "shortName": "DUKOPS",
+    "description": "Sistem pelaporan kegiatan Babinsa.",
+    "headerUnit": "KORAMIL 1609-01/BULELENG",
+    "headerAddress": ""
   }
 
-Kolom tersebut mengatur judul, satuan, dan alamat pada header aplikasi.
+File tersebut mengatur identitas aplikasi, judul, satuan, dan alamat pada
+header aplikasi.
 
 
 3. MENGATUR UPLOAD GOOGLE DRIVE
@@ -104,9 +105,9 @@ cache situs dari browser.
 
 Jangan menghapus file konfigurasi yang dibutuhkan aplikasi:
 
-  - `data/app-config.json`
   - `data/webhook.json`
   - `data/desa/desa dan kelurahan.json`
+  - `config/app-config.json`
 
 IKON APLIKASI
 -------------
