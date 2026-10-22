@@ -49,17 +49,6 @@
         </div>
     </div>
 
-    <div id="attendanceModal" class="thank-you-modal" hidden>
-        <div class="thank-you-card attendance-card">
-            <img class="modal-logo" src="logo/logo-1.png" alt="Lambang TNI Angkatan Darat">
-            <h2>Absensi Laporan</h2>
-            <div id="attendanceMessages" aria-live="polite">
-                <p><i class="fas fa-spinner fa-spin"></i> Memuat jumlah laporan...</p>
-            </div>
-            <button type="button" class="thank-you-button" onclick="closeAttendanceModal()">Tutup</button>
-        </div>
-    </div>
-
     <!-- Main Container -->
     <div class="container">
         <div id="printable-area">
@@ -117,9 +106,6 @@
             <div class="action-buttons">
                 <button id="submitBtn" class="combined-button" onclick="processSubmission()" disabled>
                     <i class="fas fa-cloud-upload-alt"></i> SIMPAN
-                </button>
-                <button id="attendanceBtn" class="attendance-button" type="button" onclick="showAttendance()">
-                    <i class="fas fa-clipboard-check"></i> ABSENSI
                 </button>
                 <button id="exitBtn" class="exit-button" type="button" onclick="exitApplication()">
                     <i class="fas fa-sign-out-alt"></i> KELUAR
@@ -1030,42 +1016,6 @@
             }, 150);
         }
 
-        async function showAttendance() {
-            const modal = document.getElementById("attendanceModal");
-            const messages = document.getElementById("attendanceMessages");
-            if (!modal || !messages) return;
-
-            if (!selectedDesa) {
-                showNotification("Pilih desa/kelurahan terlebih dahulu.", "warning");
-                return;
-            }
-
-            modal.hidden = false;
-            messages.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Memuat jumlah laporan...</p>';
-            const attendanceButton = document.getElementById("attendanceBtn");
-            if (attendanceButton) attendanceButton.disabled = true;
-
-            try {
-                const count = await window.getAttendanceCount(selectedDesa);
-                messages.innerHTML = `
-                    <p>Jumlah laporan yang sudah dikirim untuk:</p>
-                    <strong>${selectedDesa}</strong>
-                    <strong class="attendance-count">${count}</strong>
-                    <p>Data diperbarui langsung dari Supabase.</p>
-                `;
-            } catch (error) {
-                console.error("Gagal memuat absensi:", error);
-                messages.innerHTML = "<p>Data absensi belum dapat dimuat. Periksa konfigurasi Supabase dan koneksi internet.</p>";
-            } finally {
-                if (attendanceButton) attendanceButton.disabled = false;
-            }
-        }
-
-        function closeAttendanceModal() {
-            const modal = document.getElementById("attendanceModal");
-            if (modal) modal.hidden = true;
-        }
-
         function updateLiveSeconds() {
             const picker = document.getElementById("tanggalWaktu");
             if (!picker || !picker.value) return;
@@ -1330,12 +1280,6 @@
                 saveSubmittedDate(tanggalWaktu);
                 addSendLog(`${files.baseName}.png dan ${files.baseName}.txt`, "success");
                 submittedBabinsas.push({ desa: selectedDesa, date: tanggalWaktu });
-                try {
-                    await window.recordAttendance(selectedDesa, new Date(tanggalWaktu));
-                } catch (attendanceError) {
-                    console.error("Gagal menyimpan absensi Supabase:", attendanceError);
-                    showNotification("Laporan tersimpan, tetapi absensi Supabase gagal diperbarui.", "warning");
-                }
             } catch (error) {
                 console.error("Gagal membuat file laporan:", error);
                 addSendLog(`${getSubmissionBaseName()}.png dan ${getSubmissionBaseName()}.txt`, "failed", error.message);

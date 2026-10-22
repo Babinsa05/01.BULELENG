@@ -21,7 +21,3 @@ Folder Drive Baru/
 
 Skrip ini tidak menggunakan folder Drive lama. Pastikan akun pemilik
 deployment memiliki akses Editor ke folder Drive baru.
-
-Struktur database Supabase berada di `data/supabase/schema.sql`.
-Setelah policy insert/update dijalankan, laporan dari HTML akan menambah
-`jumlah_laporan` pada desa dan bulan laporan.

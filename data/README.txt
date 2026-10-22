@@ -105,7 +105,6 @@ cache situs dari browser.
 Jangan menghapus file konfigurasi yang dibutuhkan aplikasi:
 
   - `data/app-config.json`
-  - ``
   - `data/webhook.json`
   - `data/desa/desa dan kelurahan.json`
 
