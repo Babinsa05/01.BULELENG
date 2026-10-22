@@ -81,9 +81,7 @@ Upload akan membuat struktur:
     ID Akun (Desa/Kelurahan)/
       Tahun/
         Bulan/
-          Desa atau Kelurahan/
-            Nama wilayah/
-              file.zip
+          file.zip
 
 Nama ZIP menggunakan wilayah dan tanggal laporan yang dipilih.
 

@@ -17,9 +17,7 @@ Folder Drive Baru/
     counter.json
     Tahun/
       Bulan/
-        Desa atau Kelurahan/
-          Nama wilayah/
-            file.zip
+        file.zip
 
 Setiap upload mengirim nama Desa/Kelurahan terpilih sebagai `accountId`.
 Counter total dan jumlah per tanggal disimpan di `counter.json` per akun,

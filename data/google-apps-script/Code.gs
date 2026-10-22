@@ -1,4 +1,4 @@
-const ROOT_FOLDER_ID = "ISI_ID_FOLDER_DRIVE_BARU_DI_SINI";
+const ROOT_FOLDER_ID = "1U6C4geioUnHPs6OUK19ukQMpYHr-3j65";
 const COUNTER_FILE_NAME = "counter.json";
 
 function doPost(event) {
@@ -35,7 +35,7 @@ function uploadReport(params) {
   const accountFolder = getOrCreateFolderPath(rootFolder, [sanitizeFolderName(accountId)]);
   const fileName = requireValue(params.fileName, "fileName");
   const fileData = requireValue(params.fileData, "fileData");
-  const folderPath = buildFolderPath(params).slice(1);
+  const folderPath = buildFolderPath(params);
   const targetFolder = getOrCreateFolderPath(accountFolder, folderPath);
   const counter = readOrInitializeCounter(accountFolder);
   const blob = Utilities.newBlob(
@@ -119,15 +119,10 @@ function saveCounter(accountFolder, counter) {
 }
 
 function buildFolderPath(params) {
-  const accountId = requireValue(params.accountId, "accountId");
-  const regionType = params.regionType === "Kelurahan" ? "Kelurahan" : "Desa";
-  const wilayah = requireValue(params.folderName || params.desaName, "folderName")
-    .replace(new RegExp("^" + regionType + "\\s+", "i"), "")
-    .trim();
   const year = requireValue(params.year, "year");
   const month = requireValue(params.month, "month");
 
-  return [accountId, year, month, regionType, wilayah].map(sanitizeFolderName);
+  return [year, month].map(sanitizeFolderName);
 }
 
 function getOrCreateFolderPath(rootFolder, folderPath) {
