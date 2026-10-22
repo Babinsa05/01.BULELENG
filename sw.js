@@ -1,20 +1,19 @@
-const CACHE_NAME = "sistem-pelaporan-v27";
+const CACHE_NAME = "sistem-pelaporan-v33";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./js/services.js",
-  "./js/running.js",
+  "./assets/css/style.css",
   "./manifest.webmanifest",
   "./data/README.txt",
   "./data/desa/desa dan kelurahan.json",
   "./config/app-config.json",
   "./data/webhook.json",
-  "./icons/favicon.ico",
-  "./icons/favicon-16x16.png",
-  "./icons/favicon-32x32.png",
-  "./icons/apple-touch-icon.png",
-  "./icons/android-chrome-192x192.png",
-  "./icons/android-chrome-512x512.png"
+  "./assets/images/icons/favicon.ico",
+  "./assets/images/icons/favicon-16x16.png",
+  "./assets/images/icons/favicon-32x32.png",
+  "./assets/images/icons/apple-touch-icon.png",
+  "./assets/images/icons/android-chrome-192x192.png",
+  "./assets/images/icons/android-chrome-512x512.png"
 ];
 
 self.addEventListener("install", event => {
@@ -52,9 +51,7 @@ self.addEventListener("fetch", event => {
     requestUrl.pathname.endsWith("/data/webhook.json") ||
     requestUrl.pathname.endsWith("/RUNNING.txt") ||
     requestUrl.pathname.endsWith("/index.html") ||
-    requestUrl.pathname.endsWith("/js/services.js") ||
-    requestUrl.pathname.endsWith("/js/running.js") ||
-    requestUrl.pathname.endsWith("/style.css") ||
+    requestUrl.pathname.endsWith("/assets/css/style.css") ||
     requestUrl.pathname.endsWith("/manifest.webmanifest") ||
     requestUrl.pathname.endsWith("/sw.js");
 

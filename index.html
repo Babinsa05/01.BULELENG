@@ -7,16 +7,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="description" content="Sistem pelaporan kegiatan.">
     <title>Sistem Pelaporan</title>
-    <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
-    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+    <link rel="icon" type="image/x-icon" href="assets/images/icons/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/images/icons/favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/icons/apple-touch-icon.png">
     <link id="appManifest" rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#0B1220">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-    <script src="js/services.js"></script>
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <button id="installPwaButton" type="button">
@@ -27,7 +26,7 @@
         <div class="desa-start-card">
             <img
                 class="modal-logo"
-                src="logo/logo-1.png"
+                src="assets/images/logo/logo-1.png"
                 alt="Lambang TNI Angkatan Darat"
             >
             <select id="selectDesa" aria-label="Pilih desa atau kelurahan" onchange="loadSelectedDesa()">
@@ -41,13 +40,17 @@
 
     <div id="thankYouModal" class="thank-you-modal" role="dialog" aria-modal="true" aria-labelledby="thankYouTitle" hidden>
         <div class="thank-you-card">
-            <div class="thank-you-trophy" aria-hidden="true">
-                <i class="fas fa-trophy"></i>
-            </div>
-            <img class="modal-logo" src="logo/logo-1.png" alt="Lambang TNI Angkatan Darat">
+            <img class="modal-logo" src="assets/images/logo/logo-1.png" alt="Lambang TNI Angkatan Darat">
             <h2 id="thankYouTitle">Terima Kasih</h2>
-            <div id="thankYouMessages" aria-live="polite"></div>
-            <button type="button" class="thank-you-button" onclick="closeThankYouApplication()">OK</button>
+            <p id="thankYouMessage"></p>
+            <button type="button" class="thank-you-button" onclick="closeThankYouModal()">OK</button>
+        </div>
+    </div>
+
+    <div id="offlineModal" class="offline-modal" role="alert" aria-live="assertive" hidden>
+        <div class="offline-card">
+            <i class="fas fa-satellite-dish offline-icon" aria-hidden="true"></i>
+            <p>Anda sedang offline, cek jaringan koneksi internet</p>
         </div>
     </div>
 
@@ -58,7 +61,7 @@
                 <div class="header-container">
                     <img
                         class="header-image-full"
-                        src="header/header.png"
+                        src="assets/images/header/header.png"
                         alt="Header aplikasi"
                     >
                     <div id="headerDesaLabel" class="header-desa-label" aria-live="polite"></div>
@@ -118,15 +121,142 @@
                 </button>
             </div>
             <div class="counter-container" aria-live="polite">
-                <div class="counter-label">Total file ZIP berhasil terkirim</div>
+                <div class="counter-label">File terkirim</div>
                 <div class="counter-value" id="successfulUploadCount">0</div>
-                <div class="counter-label" id="latestSuccessfulUpload">Belum ada file berhasil terkirim</div>
             </div>
+            <section class="sent-files-section" aria-labelledby="sentFilesTitle">
+                <h3 id="sentFilesTitle">Log file terkirim</h3>
+                <div id="logTerkirim" aria-live="polite"></div>
+            </section>
         </div>
         
     </div>
 
     <script>
+        const WEBHOOK_CONFIG_URL = "data/webhook.json";
+        let googleAppsScriptWebhook = "";
+
+        async function getGoogleAppsScriptWebhook() {
+            if (googleAppsScriptWebhook) return googleAppsScriptWebhook;
+            const response = await fetch(WEBHOOK_CONFIG_URL, { cache: "no-store" });
+            if (!response.ok) {
+                throw new Error(`Gagal memuat konfigurasi webhook (HTTP ${response.status})`);
+            }
+            const config = await response.json();
+            if (typeof config.webhookUrl !== "string" ||
+                !/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(config.webhookUrl)) {
+                throw new Error("URL webhook belum dikonfigurasi");
+            }
+            googleAppsScriptWebhook = config.webhookUrl;
+            return googleAppsScriptWebhook;
+        }
+
+        async function sendToBackend(action, data = {}) {
+            const allowedActions = ["uploadDrive", "getCounter"];
+            if (!allowedActions.includes(action)) {
+                throw new Error(`Action "${action}" tidak tersedia`);
+            }
+
+            const formData = new FormData();
+            formData.append("action", action);
+            Object.keys(data).forEach(key => {
+                if (data[key] !== undefined && data[key] !== null) {
+                    formData.append(key, String(data[key]));
+                }
+            });
+
+            const response = await fetch(await getGoogleAppsScriptWebhook(), {
+                method: "POST",
+                body: formData
+            });
+            if (!response.ok) {
+                throw new Error(`Backend gagal (HTTP ${response.status})`);
+            }
+            return response.json();
+        }
+
+        async function getDriveUploadCounter(accountId) {
+            if (typeof accountId !== "string" || !accountId.trim()) {
+                throw new Error("ID akun Desa/Kelurahan tidak tersedia");
+            }
+            const result = await sendToBackend("getCounter", { accountId: accountId.trim() });
+            if (result.success !== true || !result.counter) {
+                throw new Error(result.error || "Gagal mengambil counter Google Drive");
+            }
+            return result.counter;
+        }
+
+        function blobToBase64(blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const result = reader.result;
+                    if (typeof result !== "string") {
+                        reject(new Error("Gagal membaca file laporan"));
+                        return;
+                    }
+                    resolve(result.split(",")[1]);
+                };
+                reader.onerror = () => reject(new Error("Gagal membaca file laporan"));
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        async function uploadToGoogleDrive(zipBlob, zipFileName, desaName, date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+                throw new Error("Tanggal upload tidak valid");
+            }
+            if (typeof desaName !== "string" || !desaName.trim()) {
+                throw new Error("ID akun Desa/Kelurahan tidak tersedia");
+            }
+
+            const accountId = desaName.trim();
+            const regionType = /^kelurahan\b/i.test(accountId) ? "Kelurahan" : "Desa";
+            const month = date.toLocaleDateString("id-ID", { month: "long" });
+            const year = String(date.getFullYear());
+            const dateParts = new Intl.DateTimeFormat("en-CA", {
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit"
+            }).formatToParts(date);
+            const dateValues = Object.fromEntries(dateParts
+                .filter(part => part.type !== "literal")
+                .map(part => [part.type, part.value]));
+            const counterDateKey = `${dateValues.year}-${dateValues.month}-${dateValues.day}`;
+            const result = await sendToBackend("uploadDrive", {
+                accountId,
+                counterDateKey,
+                fileName: zipFileName,
+                zipFileName,
+                desaName: accountId,
+                wilayah: accountId,
+                regionType,
+                folderName: accountId,
+                fileData: await blobToBase64(zipBlob),
+                year,
+                month,
+                folderPath: `${regionType}/${accountId}/${year}/${month}`,
+                desa: accountId,
+                mimeType: "application/zip"
+            });
+            if (result.duplicate === true) {
+                return {
+                    success: false,
+                    duplicate: true,
+                    error: result.error || "Laporan untuk tanggal ini sudah pernah dikirim."
+                };
+            }
+            if (result.success !== true) {
+                throw new Error(result.error || "Upload ke Google Drive gagal");
+            }
+            return { success: true, counter: result.counter };
+        }
+
+        window.sendToBackend = sendToBackend;
+        window.uploadToGoogleDrive = uploadToGoogleDrive;
+        window.getDriveUploadCounter = getDriveUploadCounter;
+
         // ================= KONFIGURASI UTAMA =================
         const LOCAL_DATA_URL = "data/desa/desa dan kelurahan.json";
         const APP_CONFIG_URL = "config/app-config.json";
@@ -147,6 +277,8 @@
         let submissionCount = 0;
         let submittedDates = [];
         let successfulUploadsByDate = {};
+        let successfulUploadTotal = 0;
+        let successfulSequenceByDate = {};
         let successfulUploadRevision = 0;
         let currentFile = null;
         let fileIsValid = false;
@@ -736,8 +868,21 @@
                 
                 img.onload = function() {
                     // Validasi 3: Dimensi gambar
-                    const width = img.width;
-                    const height = img.height;
+                    const width = img.naturalWidth || img.width;
+                    const height = img.naturalHeight || img.height;
+
+                    if (width <= height) {
+                        validationMsg.className = "validation-message validation-error";
+                        validationMsg.textContent = "Gambar harus berorientasi landscape (lebar harus lebih besar dari tinggi).";
+                        fileInput.value = "";
+                        currentFile = null;
+                        fileIsValid = false;
+                        img = new Image();
+                        document.getElementById("canvas").style.display = "none";
+                        updatePreview();
+                        checkInputCompletion();
+                        return;
+                    }
                     
                     let validationStatus = "";
                     let statusClass = "";
@@ -837,7 +982,7 @@
                 
                 if (kordinatList.length === 0) {
                     currentKoordinat = "";
-                    window.confirm(`File koordinat untuk ${selectedDesa} kosong atau tidak memiliki koordinat yang valid. Hubungi admin untuk memperbarui data.`);
+                    showNotification(`File koordinat untuk ${selectedDesa} kosong atau tidak memiliki koordinat yang valid. Hubungi admin untuk memperbarui data.`, "warning");
                     return;
                 }
 
@@ -998,81 +1143,26 @@
 
         function exitApplication() {
             const thankYouModal = document.getElementById("thankYouModal");
-            const thankYouMessages = document.getElementById("thankYouMessages");
-            if (!thankYouModal || !thankYouMessages) {
-                window.close();
-                return;
-            }
-
-            const monthlyCounts = Object.entries(successfulUploadsByDate)
-                .filter(([date, count]) =>
-                    /^\d{4}-\d{2}-\d{2}$/.test(date) &&
-                    Number.isInteger(count) &&
-                    count > 0)
-                .reduce((groups, [date, count]) => {
-                    const monthKey = date.slice(0, 7);
-                    const monthDate = new Date(`${monthKey}-01T00:00:00`);
-                    const monthYear = formatIndonesiaDate(monthDate, {
-                        month: "long",
-                        year: "numeric"
-                    });
-                    groups[monthKey] = {
-                        monthYear,
-                        count: (groups[monthKey]?.count || 0) + count
-                    };
-                    return groups;
-                }, {});
-            const orderedMonths = Object.entries(monthlyCounts)
-                .sort(([monthA], [monthB]) => monthB.localeCompare(monthA));
-            const totalReports = orderedMonths.reduce(
-                (total, [, report]) => total + report.count,
-                0
-            );
-            thankYouMessages.replaceChildren();
-
-            if (selectedDesa && orderedMonths.length === 0) {
-                const message = document.createElement("p");
-                message.textContent = `Terima kasih, ${formatBabinsaIdentity(selectedDesa)}. Anda telah mengirim 0 laporan.`;
-                thankYouMessages.appendChild(message);
-            } else {
-                orderedMonths.forEach(([, report]) => {
-                    const message = document.createElement("p");
-                    const identity = document.createElement("strong");
-                    const reportCount = document.createElement("strong");
-                    const monthYear = document.createElement("strong");
-                    identity.textContent = formatBabinsaIdentity(selectedDesa);
-                    reportCount.textContent = String(report.count);
-                    monthYear.textContent = report.monthYear;
-                    message.append(
-                        "Terima kasih, ",
-                        identity,
-                        `. Anda telah mengirim `,
-                        reportCount,
-                        " laporan untuk bulan ",
-                        monthYear,
-                        "."
-                    );
-                    thankYouMessages.appendChild(message);
-                });
-            }
-
-            const totalMessage = document.createElement("p");
-            totalMessage.className = "thank-you-total";
-            totalMessage.append("Jumlah laporan: ");
-            const total = document.createElement("strong");
-            total.textContent = String(totalReports);
-            totalMessage.appendChild(total);
-            thankYouMessages.appendChild(totalMessage);
+            const thankYouMessage = document.getElementById("thankYouMessage");
+            const identity = formatBabinsaIdentity(selectedDesa);
+            thankYouMessage.textContent =
+                `Terima kasih kepada ${identity} atas pengiriman ${successfulUploadTotal} laporan.`;
             thankYouModal.hidden = false;
         }
 
-        function closeThankYouApplication() {
+        function closeThankYouModal() {
+            document.getElementById("thankYouModal").hidden = true;
             window.close();
             setTimeout(() => {
                 if (!window.closed) {
                     window.location.replace("about:blank");
                 }
             }, 100);
+        }
+
+        function updateAppConnectionStatus() {
+            const offlineModal = document.getElementById("offlineModal");
+            if (offlineModal) offlineModal.hidden = navigator.onLine;
         }
 
         function updateLiveSeconds() {
@@ -1238,7 +1328,7 @@
                 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`
                 : "Tanpa_Tanggal";
 
-            const sequence = String(submissionCount + 1).padStart(3, "0");
+            const sequence = String((successfulSequenceByDate[datePart] || 0) + 1).padStart(3, "0");
             return `${sequence}_${desa}_${formattedDate}`;
         }
 
@@ -1333,16 +1423,21 @@
                 await downloadSubmissionFiles(files);
                 let driveUploaded = false;
                 let driveCounter = null;
+                let uploadResult = null;
                 let uploadErrorMessage = "Google Drive tidak mengonfirmasi keberhasilan upload.";
                 try {
                     const submission = await createSubmissionZip(files);
-                    const uploadResult = await window.uploadToGoogleDrive(
+                    downloadBlob(submission.zipBlob, `${submission.baseName}.zip`);
+                    uploadResult = await window.uploadToGoogleDrive(
                         submission.zipBlob,
                         `${submission.baseName}.zip`,
                         selectedDesa,
                         new Date(tanggalWaktu)
                     );
                     driveUploaded = uploadResult === true || Boolean(uploadResult && uploadResult.success === true);
+                    if (uploadResult && uploadResult.duplicate === true) {
+                        uploadErrorMessage = uploadResult.error || "Laporan untuk tanggal ini sudah pernah dikirim.";
+                    }
                     driveCounter = uploadResult && typeof uploadResult === "object"
                         ? uploadResult.counter
                         : null;
@@ -1355,15 +1450,20 @@
                     console.error("Upload Google Drive gagal:", uploadError);
                     uploadErrorMessage = uploadError.message;
                 }
-                updateCounter();
                 if (driveUploaded) {
+                    updateCounter();
                     recordSuccessfulUpload(driveCounter);
                     saveSubmittedDate(tanggalWaktu);
                     addSendLog(`${files.baseName}.zip`, "success");
                     submittedBabinsas.push({ desa: selectedDesa, date: tanggalWaktu });
                 } else {
-                    addSendLog(`${files.baseName}.zip`, "failed", uploadErrorMessage);
-                    console.warn("File laporan berhasil dibuat, tetapi upload ke Google Drive gagal:", uploadErrorMessage);
+                    const uploadStatus = uploadResult?.duplicate === true ? "duplicate" : "failed";
+                    addSendLog(`${files.baseName}.zip`, uploadStatus, uploadErrorMessage);
+                    if (uploadStatus === "duplicate") {
+                        showNotification(uploadErrorMessage, "duplicate");
+                    } else {
+                        console.warn("File laporan berhasil dibuat, tetapi upload ke Google Drive gagal:", uploadErrorMessage);
+                    }
                 }
             } catch (error) {
                 console.error("Gagal membuat file laporan:", error);
@@ -1381,43 +1481,7 @@
             const headerImage = document.getElementById('desaHeaderImage');
             if (!headerImage) return;
             // Header utama bersifat umum dan tidak bergantung pada nama Koramil.
-            headerImage.src = 'header/header.png';
-        }
-
-        function updateInstallManifest(config) {
-            const manifestLink = document.getElementById("appManifest");
-            if (!manifestLink || !config) return;
-
-            const manifest = {
-                name: config.appName || config.headerTitle,
-                short_name: config.shortName || config.appName || config.headerTitle,
-                description: config.description || "Sistem pelaporan kegiatan.",
-                lang: "id-ID",
-                start_url: "./",
-                scope: "./",
-                display: "standalone",
-                orientation: "portrait",
-                background_color: "#0B1220",
-                theme_color: "#0B1220",
-                icons: [
-                    {
-                        src: "icons/android-chrome-192x192.png",
-                        sizes: "192x192",
-                        type: "image/png",
-                        purpose: "any"
-                    },
-                    {
-                        src: "icons/android-chrome-512x512.png",
-                        sizes: "512x512",
-                        type: "image/png",
-                        purpose: "any"
-                    }
-                ]
-            };
-            manifestLink.href = URL.createObjectURL(new Blob(
-                [JSON.stringify(manifest)],
-                { type: "application/manifest+json" }
-            ));
+            headerImage.src = 'assets/images/header/header.png';
         }
 
         async function loadAppConfig() {
@@ -1464,7 +1528,6 @@
                 "content",
                 config.description || "Sistem pelaporan kegiatan."
             );
-            updateInstallManifest(config);
         }
 
         async function initialize() {
@@ -1689,8 +1752,37 @@
             const uploadsKey = getAccountStorageKey('successfulUploadsByDate');
             const savedUploads = localStorage.getItem(uploadsKey);
             successfulUploadsByDate = savedUploads ? JSON.parse(savedUploads) : {};
+            const derivedTotal = Object.values(successfulUploadsByDate)
+                .filter(count => Number.isInteger(count) && count > 0)
+                .reduce((total, count) => total + count, 0);
+            const totalKey = getAccountStorageKey('successfulUploadTotal');
+            const savedTotal = localStorage.getItem(totalKey);
+            const cachedTotal = savedTotal === null ? NaN : Number(savedTotal);
+            successfulUploadTotal = Number.isSafeInteger(cachedTotal) && cachedTotal >= 0
+                ? cachedTotal
+                : derivedTotal;
+            if (savedTotal === null || successfulUploadTotal !== cachedTotal) {
+                localStorage.setItem(totalKey, String(successfulUploadTotal));
+            }
             if (savedUploads === null) {
                 localStorage.setItem(uploadsKey, JSON.stringify(successfulUploadsByDate));
+            }
+            const sequenceKey = getAccountStorageKey('successfulSequenceByDate');
+            const savedSequences = localStorage.getItem(sequenceKey);
+            successfulSequenceByDate = savedSequences ? JSON.parse(savedSequences) : {};
+            if (savedSequences === null) {
+                const savedLogs = JSON.parse(localStorage.getItem(getAccountStorageKey('sendLogs')) || '[]');
+                savedLogs.forEach(log => {
+                    if (log.status !== "success" || typeof log.filename !== "string") return;
+                    const match = log.filename.match(/^(\d+)_.*_(\d{2})-(\d{2})-(\d{4})\.zip$/i);
+                    if (!match) return;
+                    const dateKey = `${match[4]}-${match[3]}-${match[2]}`;
+                    successfulSequenceByDate[dateKey] = Math.max(
+                        successfulSequenceByDate[dateKey] || 0,
+                        Number(match[1])
+                    );
+                });
+                localStorage.setItem(sequenceKey, JSON.stringify(successfulSequenceByDate));
             }
             loadLastSubmittedDates();
             const logsContainer = document.getElementById("logTerkirim");
@@ -1712,15 +1804,24 @@
                         Number.isInteger(count) &&
                         count >= 0)
             );
+            successfulUploadTotal = counter.total;
             localStorage.setItem(
                 getAccountStorageKey('successfulUploadsByDate'),
                 JSON.stringify(successfulUploadsByDate)
+            );
+            localStorage.setItem(
+                getAccountStorageKey('successfulUploadTotal'),
+                String(successfulUploadTotal)
             );
             renderSuccessfulUploadCounter();
         }
 
         async function syncDriveUploadCounter(accountId) {
-            if (typeof window.getDriveUploadCounter !== "function") return;
+            if (typeof window.getDriveUploadCounter !== "function") {
+                const error = new Error("Fungsi counter Google Drive belum dimuat");
+                console.error(error);
+                return;
+            }
             const revision = successfulUploadRevision;
             try {
                 const counter = await window.getDriveUploadCounter(accountId);
@@ -1739,6 +1840,13 @@
 
         function recordSuccessfulUpload(counter = null) {
             successfulUploadRevision++;
+            const submissionDateKey = getSubmissionDateKey(tanggalWaktu);
+            successfulSequenceByDate[submissionDateKey] =
+                (successfulSequenceByDate[submissionDateKey] || 0) + 1;
+            localStorage.setItem(
+                getAccountStorageKey('successfulSequenceByDate'),
+                JSON.stringify(successfulSequenceByDate)
+            );
             if (counter) {
                 applyDriveUploadCounter(counter);
                 return;
@@ -1748,76 +1856,84 @@
             const { year, month, day } = getIndonesiaDateParts(now);
             const dateKey = `${year}-${month}-${day}`;
             successfulUploadsByDate[dateKey] = (successfulUploadsByDate[dateKey] || 0) + 1;
+            successfulUploadTotal++;
             localStorage.setItem(getAccountStorageKey('successfulUploadsByDate'), JSON.stringify(successfulUploadsByDate));
+            localStorage.setItem(
+                getAccountStorageKey('successfulUploadTotal'),
+                String(successfulUploadTotal)
+            );
             renderSuccessfulUploadCounter();
         }
 
         function renderSuccessfulUploadCounter() {
             const countElement = document.getElementById("successfulUploadCount");
-            const latestElement = document.getElementById("latestSuccessfulUpload");
-            if (!countElement || !latestElement) return;
-
-            const successfulDates = Object.entries(successfulUploadsByDate)
-                .filter(([date, count]) => /^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isInteger(count) && count > 0)
-                .sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
-            const totalCount = successfulDates.reduce((total, [, count]) => total + count, 0);
-            countElement.textContent = String(totalCount);
-            if (successfulDates.length === 0) {
-                latestElement.textContent = "Belum ada file berhasil terkirim";
-                return;
-            }
-
-            const [latestDate, latestCount] = successfulDates[0];
-            latestElement.textContent =
-                `Terakhir: ${formatSubmissionDate(latestDate)} — ${latestCount} file terkirim pada tanggal tersebut`;
+            if (!countElement) return;
+            countElement.textContent = String(successfulUploadTotal);
         }
 
         function addSendLog(filename, status, message = "") {
-            const logsContainer = document.getElementById("logTerkirim");
-            if (!logsContainer) {
-                saveSendLog(filename, status, new Date().toLocaleTimeString('id-ID'));
-                return;
-            }
-            const logEntry = document.createElement("div");
-            logEntry.className = "log-entry";
-            
             const time = new Date().toLocaleTimeString('id-ID');
-            const statusClass = status === "success" ? "success" : "failed";
-            
-            logEntry.innerHTML = `
-                <div class="log-time">${time}</div>
-                <div class="log-filename">${filename}</div>
-                <div class="log-status ${statusClass}">${status.toUpperCase()}</div>
-            `;
-            
-            logsContainer.insertBefore(logEntry, logsContainer.firstChild);
-            saveSendLog(filename, status, time);
+            saveSendLog(filename, status, time, message);
+            renderSendLogs();
         }
 
-        function saveSendLog(filename, status, time) {
+        function saveSendLog(filename, status, time, message = "") {
             const storageKey = getAccountStorageKey('sendLogs');
             let logs = JSON.parse(localStorage.getItem(storageKey) || '[]');
-            logs.unshift({ filename, status, time });
+            logs.unshift({ filename, status, time, message });
             if (logs.length > 50) logs = logs.slice(0, 50);
             localStorage.setItem(storageKey, JSON.stringify(logs));
         }
 
         function loadSendLogs() {
-            const logs = JSON.parse(localStorage.getItem(getAccountStorageKey('sendLogs')) || '[]');
+            renderSendLogs();
+        }
+
+        function renderSendLogs() {
             const container = document.getElementById("logTerkirim");
             if (!container) return;
-            
+            const logs = JSON.parse(localStorage.getItem(getAccountStorageKey('sendLogs')) || '[]')
+                .filter(log => typeof log.filename === "string" &&
+                    /\.zip$/i.test(log.filename))
+                .sort((logA, logB) => {
+                    const matchA = logA.filename.match(/^(\d+)_.*_(\d{2})-(\d{2})-(\d{4})\.zip$/i);
+                    const matchB = logB.filename.match(/^(\d+)_.*_(\d{2})-(\d{2})-(\d{4})\.zip$/i);
+                    const dateA = matchA ? `${matchA[4]}-${matchA[3]}-${matchA[2]}` : "";
+                    const dateB = matchB ? `${matchB[4]}-${matchB[3]}-${matchB[2]}` : "";
+                    if (dateA !== dateB) return dateB.localeCompare(dateA);
+                    return Number(matchA?.[1] || 0) - Number(matchB?.[1] || 0);
+                });
+            container.replaceChildren();
+
+            if (logs.length === 0) {
+                const emptyMessage = document.createElement("div");
+                emptyMessage.className = "log-empty";
+                emptyMessage.textContent = "Belum ada file ZIP terkirim";
+                container.appendChild(emptyMessage);
+                return;
+            }
+
             logs.forEach(log => {
                 const logEntry = document.createElement("div");
                 logEntry.className = "log-entry";
-                const statusClass = log.status === "success" ? "success" : "failed";
-                
-                logEntry.innerHTML = `
-                    <div class="log-time">${log.time}</div>
-                    <div class="log-filename">${log.filename}</div>
-                    <div class="log-status ${statusClass}">${log.status.toUpperCase()}</div>
-                `;
-                
+                const logDate = document.createElement("div");
+                logDate.className = "log-time";
+                logDate.textContent = log.time || "";
+                const logFilename = document.createElement("div");
+                logFilename.className = "log-filename";
+                logFilename.textContent = log.filename;
+                const logStatus = document.createElement("div");
+                const isSuccessful = log.status === "success";
+                const isDuplicate = log.status === "duplicate";
+                logStatus.className = `log-status ${isSuccessful ? "success" : isDuplicate ? "duplicate" : "failed"}`;
+                logStatus.textContent = isSuccessful ? "TERKIRIM" : isDuplicate ? "DUPLIKAT" : "GAGAL";
+                logEntry.append(logDate, logFilename, logStatus);
+                if (!isSuccessful && log.message) {
+                    const logError = document.createElement("div");
+                    logError.className = "log-error";
+                    logError.textContent = log.message;
+                    logEntry.appendChild(logError);
+                }
                 container.appendChild(logEntry);
             });
         }
@@ -1882,25 +1998,27 @@
         }
 
         function resetAll() {
-            if (confirm("Reset semua data?")) {
-                submissionCount = 0;
-                localStorage.setItem(getAccountStorageKey('submissionCount'), '0');
-                
-                localStorage.removeItem(getAccountStorageKey('sendLogs'));
-                const logsContainer = document.getElementById('logTerkirim');
-                if (logsContainer) logsContainer.innerHTML = '';
-                
-                submittedDates = [];
-                localStorage.removeItem(getAccountStorageKey('submittedDates'));
+            submissionCount = 0;
+            localStorage.setItem(getAccountStorageKey('submissionCount'), '0');
+            
+            localStorage.removeItem(getAccountStorageKey('sendLogs'));
+            const logsContainer = document.getElementById('logTerkirim');
+            if (logsContainer) logsContainer.innerHTML = '';
+            
+            submittedDates = [];
+            localStorage.removeItem(getAccountStorageKey('submittedDates'));
 
-                successfulUploadsByDate = {};
-                localStorage.removeItem(getAccountStorageKey('successfulUploadsByDate'));
-                renderSuccessfulUploadCounter();
-                
-                resetForm();
-                
-                showNotification("Ã¢Å“â€¦ Data berhasil direset", "success");
-            }
+            successfulUploadsByDate = {};
+            successfulUploadTotal = 0;
+            successfulSequenceByDate = {};
+            localStorage.removeItem(getAccountStorageKey('successfulUploadsByDate'));
+            localStorage.removeItem(getAccountStorageKey('successfulUploadTotal'));
+            localStorage.removeItem(getAccountStorageKey('successfulSequenceByDate'));
+            renderSuccessfulUploadCounter();
+            
+            resetForm();
+            
+            showNotification("Ã¢Å“â€¦ Data berhasil direset", "success");
         }
 
         // ================= EVENT LISTENERS =================
@@ -1910,6 +2028,10 @@
                 updateChatStatus('connected');
             }
         });
+
+        window.addEventListener("online", updateAppConnectionStatus);
+        window.addEventListener("offline", updateAppConnectionStatus);
+        updateAppConnectionStatus();
         
         window.addEventListener('beforeunload', function() {
             chatConnectionActive = false;
@@ -1934,7 +2056,10 @@
         function updateInstallButton() {
             const button = document.getElementById('installPwaButton');
             if (!button) return;
-            button.classList.toggle('visible', Boolean(deferredInstallPrompt) && !isPwaInstalled());
+            button.classList.toggle(
+                'visible',
+                Boolean(deferredInstallPrompt) && !isPwaInstalled()
+            );
         }
 
         window.addEventListener('beforeinstallprompt', event => {
@@ -1948,13 +2073,38 @@
             updateInstallButton();
         });
 
+        const standaloneDisplayMode = window.matchMedia('(display-mode: standalone)');
+        if (typeof standaloneDisplayMode.addEventListener === 'function') {
+            standaloneDisplayMode.addEventListener('change', updateInstallButton);
+        } else if (typeof standaloneDisplayMode.addListener === 'function') {
+            standaloneDisplayMode.addListener(updateInstallButton);
+        }
+        updateInstallButton();
+
         document.getElementById('installPwaButton').addEventListener('click', async () => {
-            if (!deferredInstallPrompt) return;
+            if (isPwaInstalled()) {
+                updateInstallButton();
+                return;
+            }
+            if (!deferredInstallPrompt) {
+                showNotification("Instalasi langsung belum tersedia di browser ini.", "warning");
+                return;
+            }
+
             const promptEvent = deferredInstallPrompt;
             deferredInstallPrompt = null;
-            await promptEvent.prompt();
-            await promptEvent.userChoice;
-            updateInstallButton();
+            try {
+                await promptEvent.prompt();
+                const choice = await promptEvent.userChoice;
+                if (choice.outcome === "accepted") {
+                    updateInstallButton();
+                }
+            } catch (error) {
+                console.error('Prompt instalasi gagal:', error);
+                showNotification("Prompt instalasi gagal dibuka. Coba instal melalui menu browser.", "error");
+            } finally {
+                updateInstallButton();
+            }
         });
 
         if (window.location.protocol !== 'file:' && 'serviceWorker' in navigator) {

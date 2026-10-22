@@ -108,8 +108,8 @@ Jangan menghapus file konfigurasi yang dibutuhkan aplikasi:
 IKON APLIKASI
 -------------
 
-Ikon PWA dan favicon menggunakan file lokal di folder `icons`. Ganti file
-PNG/ICO di folder tersebut dengan lambang Kodam IX/Udayana tanpa mengubah
+Ikon PWA dan favicon menggunakan file lokal di folder
+`assets/images/icons`. Ganti file PNG/ICO di folder tersebut tanpa mengubah
 skrip. Manifest juga memiliki URL Wikimedia sebagai alternatif:
 
   https://upload.wikimedia.org/wikipedia/commons/2/25/Lambang_Kodam_Udayana.svg
