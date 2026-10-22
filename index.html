@@ -283,7 +283,6 @@
         let currentFile = null;
         let fileIsValid = false;
         let lastAutoDateNarration = "";
-        // Ucapan penutup hanya menghitung laporan pada sesi aplikasi saat ini.
         let submittedBabinsas = [];
         let activeAccountId = "";
         const DEVICE_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -367,7 +366,6 @@
         function setChatMode(mode) {
             chatMode = mode;
             
-            // Update UI button states
             document.querySelectorAll('.chat-option-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
@@ -375,7 +373,6 @@
             const activeBtn = document.getElementById(mode + 'ModeBtn');
             if (activeBtn) activeBtn.classList.add('active');
             
-            // Show notification
             let modeText = '';
             switch(mode) {
                 case 'bot':
@@ -389,14 +386,12 @@
                 timestamp: new Date().toISOString()
             });
             
-            // Save preference
             localStorage.setItem('dukops_chat_mode', mode);
         }
         
         function initChatSystem() {
             console.log('Ã°Å¸â€™Â¬ Initializing hybrid chat system...');
             
-            // Load chat mode preference
             const savedMode = localStorage.getItem('dukops_chat_mode');
             if (savedMode) {
                 setChatMode('bot');
@@ -404,32 +399,17 @@
                 setChatMode('bot');
             }
             
-            // Update desa badge
             updateChatDesaBadge();
-            
-            // Load chat history
             loadChatHistory();
-            
-            // Setup event listeners
             setupChatEvents();
-            
-            // Setup chat input auto-focus
             setupChatInputAutoFocus();
-            
-            // Clean auto-reply
             setTimeout(cleanAutoReplyFromHistory, 1000);
-            
-            // Start polling
         }
         
         function setupChatEvents() {
-            // Chat toggle button
             document.getElementById('chatToggleBtn').onclick = toggleChatWidget;
-            
-            // Close chat button
             document.getElementById('closeChat').onclick = toggleChatWidget;
             
-            // Chat input enter key
             const chatInput = document.getElementById('chatInput');
             chatInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -521,7 +501,6 @@
                                 
                                 if (ignoredMessageIds.has(msgId)) return;
                                 
-                                // FILTER AUTO-REPLY
                                 const isAutoReply = 
                                     msgText.includes('BOT INPUT BABINSA') ||
                                     msgText.includes('Terima kasih. Silakan isi form') ||
@@ -542,7 +521,6 @@
                                     return;
                                 }
                                 
-                                // Tampilkan semua pesan dari MangSatria79
                                 processIncomingMessage(msg);
                             }
                         });
@@ -582,7 +560,6 @@
             
             let senderDisplay = senderName;
             
-            // Tampilkan di chat
             addChatMessage({
                 type: 'incoming',
                 text: messageText,
@@ -590,13 +567,11 @@
                 timestamp: new Date(message.date * 1000).toISOString()
             });
             
-            // Unread counter
             if (document.getElementById('telegramChatWidget').style.display !== 'flex') {
                 unreadMessages++;
                 updateUnreadCounter();
             }
             
-            // Handle command dari pengguna yang diizinkan
             if (senderId == TELEGRAM_CHAT_ID) {
                 handleIncomingCommand(messageText, senderName, chatId);
             }
@@ -612,7 +587,6 @@
                 sendTelegramReply(chatId, 'Ã¢Å“â€¦ Form telah direset.');
             }
             
-            // Auto-reply untuk pesan tertentu
             if (lowerMsg === 'status') {
                 sendTelegramReply(chatId, `Ã°Å¸â€œÅ  Status Form: ${getFormStatus()}\nÃ°Å¸â€œË† Total: ${submissionCount} laporan`);
             }
@@ -625,7 +599,6 @@
             const message = input.value.trim();
             const timestamp = new Date().toISOString();
             
-            // Jika belum pilih desa, warning
             if (!selectedDesa) {
                 addChatMessage({
                     type: 'error',
@@ -635,7 +608,6 @@
                 return;
             }
             
-            // Tampilkan di chat UI sebagai outgoing DENGAN NAMA DESA
             addChatMessage({
                 type: 'outgoing',
                 text: message,
@@ -643,16 +615,13 @@
                 timestamp: timestamp
             });
             
-            // Reset input
             input.value = '';
             input.style.height = '45px';
             
-            // Kirim berdasarkan mode dengan IDENTITAS DESA
             try {
                 let promises = [];
                 let modeText = '';
                 
-                // Format pesan dengan identitas desa
                 const simpleMessage = `Babinsa ${selectedDesa}: ${message}`;
                 
                 promises.push(
@@ -668,10 +637,8 @@
                 );
                 modeText = 'Bot ';
                 
-                // Tunggu semua kiriman selesai
                 const results = await Promise.allSettled(promises);
                 
-                // Cek hasil
                 const successCount = results.filter(r => r.status === 'fulfilled' && r.value.ok).length;
                 
                 if (successCount === 0) {
@@ -681,7 +648,6 @@
                         timestamp: new Date().toISOString()
                     });
                 } else {
-                    // Tampilkan info pengiriman berhasil
                     addChatMessage({
                         type: 'system',
                         text: `Ã¢Å“â€¦ Pesan terkirim ke: ${modeText.trim()}\nÃ°Å¸â€œâ€¹ Identitas: Babinsa ${selectedDesa}`,
@@ -735,7 +701,6 @@
                 minute: '2-digit'
             });
             
-            // Tambahkan badge desa untuk pesan outgoing
             let senderHtml = '';
             if (messageData.sender) {
                 if (messageData.type === 'outgoing' && selectedDesa) {
@@ -829,7 +794,6 @@
             const fileInput = document.getElementById("gambar");
             const validationMsg = document.getElementById("fileValidation");
             
-            // Reset state
             validationMsg.className = "validation-message";
             validationMsg.textContent = "";
             fileIsValid = false;
@@ -844,7 +808,6 @@
             
             currentFile = fileInput.files[0];
             
-            // Validasi 1: Tipe file
             if (!ALLOWED_TYPES.includes(currentFile.type)) {
                 validationMsg.className = "validation-message validation-error";
                 validationMsg.textContent = `Ã¢ÂÅ’ Format file tidak didukung. Gunakan: JPEG, PNG, GIF, WebP`;
@@ -852,7 +815,6 @@
                 return;
             }
             
-            // Validasi 2: Ukuran file
             if (currentFile.size > MAX_FILE_SIZE) {
                 validationMsg.className = "validation-message validation-error";
                 validationMsg.textContent = `Ã¢ÂÅ’ File terlalu besar (${formatFileSize(currentFile.size)}). Maksimal: ${formatFileSize(MAX_FILE_SIZE)}`;
@@ -860,14 +822,12 @@
                 return;
             }
             
-            // Preview gambar
             const reader = new FileReader();
             reader.onload = function(e) {
                 img = new Image();
                 img.src = e.target.result;
                 
                 img.onload = function() {
-                    // Validasi 3: Dimensi gambar
                     const width = img.naturalWidth || img.width;
                     const height = img.naturalHeight || img.height;
 
@@ -905,7 +865,6 @@
                         <small>Rasio: ${(width/height).toFixed(2)}:1 | Format: ${currentFile.type.split('/')[1].toUpperCase()}</small>
                     `;
                     
-                    // Load koordinat jika ada
                     if (kordinatList.length > 0) {
                         pickRandomKoordinat();
                     }
@@ -957,10 +916,8 @@
             }
             document.getElementById('previewDesa').textContent = babinsaIdentity;
             
-            // Update chat badge dengan nama desa
             updateChatDesaBadge();
             
-            // Tambahkan notifikasi di chat
             if (selectedDesa) {
                 addChatMessage({
                     type: 'system',
@@ -1000,9 +957,6 @@
                 checkInputCompletion();
             }
         }
-        
-        // ... (Fungsi-fungsi form lainnya tetap sama seperti sebelumnya)
-        // Untuk menghemat space, hanya menampilkan fungsi yang penting
         
         function pickRandomKoordinat() {
             if (kordinatList.length === 0) {
@@ -1337,10 +1291,10 @@
             const narasiInput = document.getElementById("narasi").value.trim();
             const date = tanggalWaktu ? new Date(tanggalWaktu) : new Date();
             const formattedDate = formatIndonesiaDate(date, {
-                weekday: "long",
-                day: "2-digit",
-                month: "long",
-                year: "numeric"
+                weekday: 'long',
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
             });
             const narasi = narasiInput === formattedDate
                 ? ""
@@ -1427,7 +1381,7 @@
                 let uploadErrorMessage = "Google Drive tidak mengonfirmasi keberhasilan upload.";
                 try {
                     const submission = await createSubmissionZip(files);
-                    downloadBlob(submission.zipBlob, `${submission.baseName}.zip`);
+                    // ZIP TIDAK diunduh ke lokal — hanya diunggah ke Google Drive.
                     uploadResult = await window.uploadToGoogleDrive(
                         submission.zipBlob,
                         `${submission.baseName}.zip`,
@@ -1480,7 +1434,6 @@
         function updateDesaHeaderImage(desaName) {
             const headerImage = document.getElementById('desaHeaderImage');
             if (!headerImage) return;
-            // Header utama bersifat umum dan tidak bergantung pada nama Koramil.
             headerImage.src = 'assets/images/header/header.png';
         }
 
@@ -1666,16 +1619,13 @@
             document.querySelector(".waktu-input-kustom .date-picker-label").textContent = "Waktu";
             document.getElementById('previewTanggal').textContent = "";
             
-            // Reset validasi foto
             document.getElementById('fileValidation').className = "validation-message";
             document.getElementById('fileValidation').textContent = "";
             fileIsValid = false;
             currentFile = null;
             
-            // Reset chat badge
             updateChatDesaBadge();
             
-            // Tambahkan notifikasi di chat
             addChatMessage({
                 type: 'system',
                 text: 'Ã°Å¸â€â€ž Form telah direset. Silakan pilih desa/kelurahan kembali.',
@@ -2038,7 +1988,6 @@
             saveChatHistory();
         });
 
-        // Start when page is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initialize);
         } else {
