@@ -17,7 +17,7 @@ async function getGoogleAppsScriptWebhook() {
 }
 
 export async function sendToBackend(action, data = {}) {
-    const allowedActions = ["uploadDrive"];
+    const allowedActions = ["uploadDrive", "getCounter"];
     if (!allowedActions.includes(action)) {
         throw new Error(`Action "${action}" tidak tersedia`);
     }
@@ -40,6 +40,17 @@ export async function sendToBackend(action, data = {}) {
     }
 
     return response.json();
+}
+
+export async function getDriveUploadCounter(accountId) {
+    if (typeof accountId !== "string" || !accountId.trim()) {
+        throw new Error("ID akun Desa/Kelurahan tidak tersedia");
+    }
+    const result = await sendToBackend("getCounter", { accountId: accountId.trim() });
+    if (result.success !== true || !result.counter) {
+        throw new Error(result.error || "Gagal mengambil counter Google Drive");
+    }
+    return result.counter;
 }
 
 function blobToBase64(blob) {
@@ -70,8 +81,20 @@ export async function uploadToGoogleDrive(zipBlob, zipFileName, desaName, date) 
     const regionType = /^kelurahan\b/i.test(accountId) ? "Kelurahan" : "Desa";
     const month = date.toLocaleDateString("id-ID", { month: "long" });
     const year = String(date.getFullYear());
+    const now = new Date();
+    const dateParts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+    }).formatToParts(now);
+    const dateValues = Object.fromEntries(dateParts
+        .filter(part => part.type !== "literal")
+        .map(part => [part.type, part.value]));
+    const counterDateKey = `${dateValues.year}-${dateValues.month}-${dateValues.day}`;
     const result = await sendToBackend("uploadDrive", {
         accountId,
+        counterDateKey,
         fileName: zipFileName,
         zipFileName,
         desaName: accountId,
@@ -85,5 +108,8 @@ export async function uploadToGoogleDrive(zipBlob, zipFileName, desaName, date) 
         desa: accountId,
         mimeType: "application/zip"
     });
-    return result.success === true;
+    if (result.success !== true) {
+        throw new Error(result.error || "Upload ke Google Drive gagal");
+    }
+    return { success: true, counter: result.counter };
 }

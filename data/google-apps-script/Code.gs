@@ -1,35 +1,120 @@
 const ROOT_FOLDER_ID = "ISI_ID_FOLDER_DRIVE_BARU_DI_SINI";
+const COUNTER_FILE_NAME = "counter.json";
 
 function doPost(event) {
   try {
     const params = event && event.parameter ? event.parameter : {};
+    if (params.action === "getCounter") {
+      return getAccountCounter(params);
+    }
     if (params.action !== "uploadDrive") {
       return jsonResponse({ success: false, error: "Action tidak tersedia" });
     }
 
-    const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
-    const fileName = requireValue(params.fileName, "fileName");
-    const fileData = requireValue(params.fileData, "fileData");
-    const folderPath = buildFolderPath(params);
-    const targetFolder = getOrCreateFolderPath(rootFolder, folderPath);
-    const blob = Utilities.newBlob(
-      Utilities.base64Decode(fileData),
-      params.mimeType || "application/zip",
-      fileName
-    );
-    const file = targetFolder.createFile(blob);
-
-    return jsonResponse({
-      success: true,
-      fileId: file.getId(),
-      fileName: file.getName(),
-      folderPath: folderPath.join("/")
-    });
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      return uploadReport(params);
+    } finally {
+      lock.releaseLock();
+    }
   } catch (error) {
     return jsonResponse({
       success: false,
       error: error && error.message ? error.message : "Upload gagal"
     });
+  }
+}
+
+function uploadReport(params) {
+  const accountId = requireValue(params.accountId, "accountId");
+  const counterDateKey = /^\d{4}-\d{2}-\d{2}$/.test(params.counterDateKey || "")
+    ? params.counterDateKey
+    : Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+  const accountFolder = getOrCreateFolderPath(rootFolder, [sanitizeFolderName(accountId)]);
+  const fileName = requireValue(params.fileName, "fileName");
+  const fileData = requireValue(params.fileData, "fileData");
+  const folderPath = buildFolderPath(params).slice(1);
+  const targetFolder = getOrCreateFolderPath(accountFolder, folderPath);
+  const counter = readOrInitializeCounter(accountFolder);
+  const blob = Utilities.newBlob(
+    Utilities.base64Decode(fileData),
+    params.mimeType || "application/zip",
+    fileName
+  );
+  const file = targetFolder.createFile(blob);
+  counter.total++;
+  counter.dailyCounts[counterDateKey] = (counter.dailyCounts[counterDateKey] || 0) + 1;
+  saveCounter(accountFolder, counter);
+
+  return jsonResponse({
+    success: true,
+    fileId: file.getId(),
+    fileName: file.getName(),
+    folderPath: [accountId].concat(folderPath).join("/"),
+    counter: counter
+  });
+}
+
+function getAccountCounter(params) {
+  const accountId = requireValue(params.accountId, "accountId");
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+    const accountFolder = getOrCreateFolderPath(rootFolder, [sanitizeFolderName(accountId)]);
+    const counter = readOrInitializeCounter(accountFolder);
+    return jsonResponse({ success: true, counter: counter });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function readOrInitializeCounter(accountFolder) {
+  const counterFiles = accountFolder.getFilesByName(COUNTER_FILE_NAME);
+  if (counterFiles.hasNext()) {
+    const counter = JSON.parse(counterFiles.next().getBlob().getDataAsString());
+    if (!counter || !Number.isInteger(counter.total) || counter.total < 0 ||
+        !counter.dailyCounts || typeof counter.dailyCounts !== "object") {
+      throw new Error("File counter.json di Google Drive tidak valid");
+    }
+    return counter;
+  }
+
+  const counter = { total: 0, dailyCounts: {} };
+  countZipFiles(accountFolder, counter);
+  saveCounter(accountFolder, counter);
+  return counter;
+}
+
+function countZipFiles(folder, counter) {
+  const files = folder.getFiles();
+  while (files.hasNext()) {
+    const file = files.next();
+    if (file.getMimeType() !== "application/zip") continue;
+    const dateKey = Utilities.formatDate(
+      file.getDateCreated(),
+      Session.getScriptTimeZone(),
+      "yyyy-MM-dd"
+    );
+    counter.total++;
+    counter.dailyCounts[dateKey] = (counter.dailyCounts[dateKey] || 0) + 1;
+  }
+
+  const folders = folder.getFolders();
+  while (folders.hasNext()) {
+    countZipFiles(folders.next(), counter);
+  }
+}
+
+function saveCounter(accountFolder, counter) {
+  const content = JSON.stringify(counter);
+  const counterFiles = accountFolder.getFilesByName(COUNTER_FILE_NAME);
+  if (counterFiles.hasNext()) {
+    counterFiles.next().setContent(content);
+  } else {
+    accountFolder.createFile(COUNTER_FILE_NAME, content, MimeType.PLAIN_TEXT);
   }
 }
 

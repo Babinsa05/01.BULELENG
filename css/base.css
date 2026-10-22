@@ -37,6 +37,132 @@
             backdrop-filter: blur(3px);
             z-index: 50;
         }
+
+        .thank-you-modal[hidden] {
+            display: none;
+        }
+
+        .thank-you-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: grid;
+            place-items: center;
+            overflow-y: auto;
+            padding: max(24px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right))
+                max(24px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+            background:
+                radial-gradient(ellipse at 50% 36%, rgba(37, 99, 235, 0.32), transparent 52%),
+                rgba(3, 9, 18, 0.96);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            animation: thank-you-enter 450ms ease-out both;
+        }
+
+        .thank-you-card {
+            width: min(100%, 620px);
+            max-height: 100%;
+            overflow-y: auto;
+            padding: clamp(24px, 6vw, 48px);
+            border: 1px solid rgba(199, 170, 114, 0.68);
+            border-radius: 28px;
+            background: linear-gradient(155deg, #17263D 0%, #0B1220 72%);
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55), 0 0 42px rgba(37, 99, 235, 0.22);
+            color: #EAF5FF;
+            text-align: center;
+            animation: thank-you-card-enter 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+
+        .thank-you-trophy {
+            display: grid;
+            place-items: center;
+            width: 104px;
+            height: 104px;
+            margin: 0 auto 14px;
+            border: 1px solid rgba(255, 225, 143, 0.75);
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 25%, #FFF1B8, #C7AA72 56%, #8C672C);
+            box-shadow: 0 0 38px rgba(255, 205, 86, 0.42);
+            color: #17263D;
+            font-size: 48px;
+            animation: trophy-celebrate 1.8s ease-in-out infinite;
+        }
+
+        .thank-you-card .modal-logo {
+            width: 76px;
+            height: 94px;
+            margin-bottom: 10px;
+        }
+
+        .thank-you-card h2 {
+            margin-bottom: 16px;
+            color: #FFE7A3;
+            font-size: clamp(30px, 7vw, 46px);
+            text-shadow: 0 0 20px rgba(255, 205, 86, 0.26);
+        }
+
+        #thankYouMessages {
+            margin: 0 auto 22px;
+            color: #EAF5FF;
+            font-size: clamp(16px, 4vw, 20px);
+        }
+
+        #thankYouMessages p + p {
+            margin-top: 10px;
+        }
+
+        .thank-you-total {
+            color: #FFE7A3;
+            font-weight: 700;
+        }
+
+        .thank-you-button {
+            min-width: 150px;
+            min-height: 52px;
+            padding: 10px 30px;
+            border: 0;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #E7C66F, #B98B35);
+            box-shadow: 0 8px 24px rgba(185, 139, 53, 0.35);
+            color: #111C2E;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .thank-you-button:hover,
+        .thank-you-button:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(185, 139, 53, 0.48);
+        }
+
+        @keyframes thank-you-enter {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes thank-you-card-enter {
+            from { opacity: 0; transform: translateY(24px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes trophy-celebrate {
+            0%, 100% { transform: translateY(0) rotate(-4deg); }
+            50% { transform: translateY(-10px) rotate(4deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .thank-you-modal,
+            .thank-you-card,
+            .thank-you-trophy {
+                animation: none;
+            }
+
+            .thank-you-button {
+                transition: none;
+            }
+        }
         
         .container {
             width: 100%;

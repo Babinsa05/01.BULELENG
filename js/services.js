@@ -9,3 +9,6 @@ window.sendToBackend = (...args) =>
 
 window.uploadToGoogleDrive = (...args) =>
     runningModule.then(module => module.uploadToGoogleDrive(...args));
+
+window.getDriveUploadCounter = (...args) =>
+    runningModule.then(module => module.getDriveUploadCounter(...args));

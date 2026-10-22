@@ -14,6 +14,7 @@ GOOGLE APPS SCRIPT BARU
 Struktur folder otomatis:
 Folder Drive Baru/
   ID Akun (Desa/Kelurahan)/
+    counter.json
     Tahun/
       Bulan/
         Desa atau Kelurahan/
@@ -21,8 +22,14 @@ Folder Drive Baru/
             file.zip
 
 Setiap upload mengirim nama Desa/Kelurahan terpilih sebagai `accountId`.
-Counter, riwayat upload, dan tanggal kirim di browser juga disimpan terpisah
-per ID akun tersebut.
+Counter total dan jumlah per tanggal disimpan di `counter.json` per akun,
+serta disalin ke localStorage browser. Saat pertama kali akun dipilih,
+counter diinisialisasi ke 0 jika belum ada ZIP di folder akun. ZIP yang sudah
+ada dihitung saat counter Drive dibuat pertama kali.
+
+Apps Script melayani action `uploadDrive` untuk upload dan `getCounter` untuk
+mengirim counter Drive ke aplikasi. Deploy ulang script setelah Code.gs
+diperbarui agar kedua action tersedia.
 
 Skrip ini tidak menggunakan folder Drive lama. Pastikan akun pemilik
 deployment memiliki akses Editor ke folder Drive baru.

@@ -1,4 +1,4 @@
-const CACHE_NAME = "sistem-pelaporan-v24";
+const CACHE_NAME = "sistem-pelaporan-v27";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -50,6 +50,7 @@ self.addEventListener("fetch", event => {
   const alwaysFresh = requestUrl.pathname.includes("/data/desa/") ||
     requestUrl.pathname.endsWith("/config/app-config.json") ||
     requestUrl.pathname.endsWith("/data/webhook.json") ||
+    requestUrl.pathname.endsWith("/RUNNING.txt") ||
     requestUrl.pathname.endsWith("/index.html") ||
     requestUrl.pathname.endsWith("/js/services.js") ||
     requestUrl.pathname.endsWith("/js/running.js") ||

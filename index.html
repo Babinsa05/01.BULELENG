@@ -34,16 +34,18 @@
                 <option value="">Pilih Desa/Kelurahan</option>
             </select>
             <div class="start-mode-description" aria-live="polite">
-                <span class="marquee-text">Developer: Mang Satria | Versi 2.1 | Tahun 2026</span>
+                <span id="runningTextContent" class="marquee-text">Memuat RUNNING.TXT...</span>
             </div>
-            <div id="loadingDesa"><i class="fas fa-spinner fa-spin"></i> Memuat daftar desa...</div>
         </div>
     </div>
 
-    <div id="thankYouModal" class="thank-you-modal" hidden>
+    <div id="thankYouModal" class="thank-you-modal" role="dialog" aria-modal="true" aria-labelledby="thankYouTitle" hidden>
         <div class="thank-you-card">
+            <div class="thank-you-trophy" aria-hidden="true">
+                <i class="fas fa-trophy"></i>
+            </div>
             <img class="modal-logo" src="logo/logo-1.png" alt="Lambang TNI Angkatan Darat">
-            <h2>Terima Kasih</h2>
+            <h2 id="thankYouTitle">Terima Kasih</h2>
             <div id="thankYouMessages" aria-live="polite"></div>
             <button type="button" class="thank-you-button" onclick="closeThankYouApplication()">OK</button>
         </div>
@@ -145,6 +147,7 @@
         let submissionCount = 0;
         let submittedDates = [];
         let successfulUploadsByDate = {};
+        let successfulUploadRevision = 0;
         let currentFile = null;
         let fileIsValid = false;
         let lastAutoDateNarration = "";
@@ -799,11 +802,12 @@
             }
             selectedDesa = select.options[select.selectedIndex].text.replace(/^\d+\.\s*/, '');
             initializeAccountData(selectedDesa);
+            syncDriveUploadCounter(selectedDesa);
             const babinsaIdentity = getBabinsaIdentity(selectedDesa);
             updateDesaHeaderImage(selectedDesa);
             const headerDesaLabel = document.getElementById('headerDesaLabel');
             if (headerDesaLabel) {
-                headerDesaLabel.textContent = `Babinsa ${selectedDesa}`;
+                headerDesaLabel.textContent = formatBabinsaIdentity(selectedDesa);
                 headerDesaLabel.classList.add('header-desa-marquee');
             }
             document.getElementById('previewDesa').textContent = babinsaIdentity;
@@ -831,7 +835,11 @@
                     .map(line => line.trim())
                     .filter(line => line && !line.startsWith('#') && line.includes(','));
                 
-                if (kordinatList.length === 0) throw new Error("File koordinat kosong");
+                if (kordinatList.length === 0) {
+                    currentKoordinat = "";
+                    window.confirm(`File koordinat untuk ${selectedDesa} kosong atau tidak memiliki koordinat yang valid. Hubungi admin untuk memperbarui data.`);
+                    return;
+                }
 
                 currentKoordinat = "";
                 pickRandomKoordinat();
@@ -996,36 +1004,75 @@
                 return;
             }
 
-            const groupedReports = submittedBabinsas.reduce((groups, report) => {
-                const date = report.date ? new Date(report.date) : null;
-                const monthYear = date && !Number.isNaN(date.getTime())
-                    ? formatIndonesiaDate(date, { month: "long", year: "numeric" })
-                    : "Periode sebelumnya";
-                const key = `${report.desa}|${monthYear}`;
-                if (!groups[key]) {
-                    groups[key] = { desa: report.desa, monthYear, count: 0 };
-                }
-                groups[key].count += 1;
-                return groups;
-            }, {});
-            const totalReports = submittedBabinsas.length;
-            const reportMessages = Object.values(groupedReports)
-                .map(report => `<p>Terima kasih kepada <strong>Babinsa ${report.desa}</strong> telah mengirim <strong>${report.count} laporan</strong> untuk bulan <strong>${report.monthYear}</strong>.</p>`)
-                .join("");
-            thankYouMessages.innerHTML = `
-                ${reportMessages}
-                <p class="thank-you-total">Jumlah laporan: <strong>${totalReports}</strong></p>
-            `;
+            const monthlyCounts = Object.entries(successfulUploadsByDate)
+                .filter(([date, count]) =>
+                    /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+                    Number.isInteger(count) &&
+                    count > 0)
+                .reduce((groups, [date, count]) => {
+                    const monthKey = date.slice(0, 7);
+                    const monthDate = new Date(`${monthKey}-01T00:00:00`);
+                    const monthYear = formatIndonesiaDate(monthDate, {
+                        month: "long",
+                        year: "numeric"
+                    });
+                    groups[monthKey] = {
+                        monthYear,
+                        count: (groups[monthKey]?.count || 0) + count
+                    };
+                    return groups;
+                }, {});
+            const orderedMonths = Object.entries(monthlyCounts)
+                .sort(([monthA], [monthB]) => monthB.localeCompare(monthA));
+            const totalReports = orderedMonths.reduce(
+                (total, [, report]) => total + report.count,
+                0
+            );
+            thankYouMessages.replaceChildren();
+
+            if (selectedDesa && orderedMonths.length === 0) {
+                const message = document.createElement("p");
+                message.textContent = `Terima kasih, ${formatBabinsaIdentity(selectedDesa)}. Anda telah mengirim 0 laporan.`;
+                thankYouMessages.appendChild(message);
+            } else {
+                orderedMonths.forEach(([, report]) => {
+                    const message = document.createElement("p");
+                    const identity = document.createElement("strong");
+                    const reportCount = document.createElement("strong");
+                    const monthYear = document.createElement("strong");
+                    identity.textContent = formatBabinsaIdentity(selectedDesa);
+                    reportCount.textContent = String(report.count);
+                    monthYear.textContent = report.monthYear;
+                    message.append(
+                        "Terima kasih, ",
+                        identity,
+                        `. Anda telah mengirim `,
+                        reportCount,
+                        " laporan untuk bulan ",
+                        monthYear,
+                        "."
+                    );
+                    thankYouMessages.appendChild(message);
+                });
+            }
+
+            const totalMessage = document.createElement("p");
+            totalMessage.className = "thank-you-total";
+            totalMessage.append("Jumlah laporan: ");
+            const total = document.createElement("strong");
+            total.textContent = String(totalReports);
+            totalMessage.appendChild(total);
+            thankYouMessages.appendChild(totalMessage);
             thankYouModal.hidden = false;
         }
 
         function closeThankYouApplication() {
             window.close();
             setTimeout(() => {
-                if (!document.hidden) {
-                    showNotification("Silakan tutup tab atau jendela aplikasi secara manual.", "warning");
+                if (!window.closed) {
+                    window.location.replace("about:blank");
                 }
-            }, 150);
+            }, 100);
         }
 
         function updateLiveSeconds() {
@@ -1047,6 +1094,15 @@
         function autoResizeNarasi(textarea) {
             textarea.style.height = "auto";
             textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+
+        function formatBabinsaIdentity(value) {
+            const identity = String(value || "")
+                .trim()
+                .replace(/^(?:Babinsa\s+)+/i, "")
+                .replace(/^Desa\s+/i, "")
+                .trim();
+            return identity ? `Babinsa ${identity}` : "Babinsa";
         }
         
         function updatePreview() {
@@ -1093,9 +1149,11 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
             
-            const watermarkText = watermarkInput && watermarkInput.value.trim()
-                ? watermarkInput.value.trim()
-                : (selectedDesa ? `Babinsa ${selectedDesa}` : "Babinsa");
+            const customWatermark = watermarkInput ? watermarkInput.value.trim() : "";
+            const isIdentityWatermark = /^(?:Babinsa|Desa|Kelurahan)\b/i.test(customWatermark);
+            const watermarkText = customWatermark
+                ? (isIdentityWatermark ? formatBabinsaIdentity(customWatermark) : customWatermark)
+                : formatBabinsaIdentity(selectedDesa);
 
             if (watermarkText || currentKoordinat || tanggalWaktu) {
                 ctx.textAlign = "right";
@@ -1185,7 +1243,7 @@
         }
 
         function buildSubmissionNarrative() {
-            const desa = selectedDesa || "Tanpa Desa";
+            const identity = formatBabinsaIdentity(selectedDesa || "Tanpa Desa");
             const narasiInput = document.getElementById("narasi").value.trim();
             const date = tanggalWaktu ? new Date(tanggalWaktu) : new Date();
             const formattedDate = formatIndonesiaDate(date, {
@@ -1200,7 +1258,7 @@
                     ? narasiInput.slice(formattedDate.length).trim()
                     : narasiInput;
 
-            return `${formattedDate}\tBabinsa ${desa} ${narasi}`;
+            return `${formattedDate}\t${identity} ${narasi}`;
         }
 
         function canvasToBlob(canvas) {
@@ -1274,15 +1332,20 @@
                 const files = await createSubmissionFiles();
                 await downloadSubmissionFiles(files);
                 let driveUploaded = false;
+                let driveCounter = null;
                 let uploadErrorMessage = "Google Drive tidak mengonfirmasi keberhasilan upload.";
                 try {
                     const submission = await createSubmissionZip(files);
-                    driveUploaded = await window.uploadToGoogleDrive(
+                    const uploadResult = await window.uploadToGoogleDrive(
                         submission.zipBlob,
                         `${submission.baseName}.zip`,
                         selectedDesa,
                         new Date(tanggalWaktu)
                     );
+                    driveUploaded = uploadResult === true || Boolean(uploadResult && uploadResult.success === true);
+                    driveCounter = uploadResult && typeof uploadResult === "object"
+                        ? uploadResult.counter
+                        : null;
                     if (driveUploaded) {
                         updateStoredFileTicker(`${submission.baseName}.zip`);
                     } else {
@@ -1294,13 +1357,13 @@
                 }
                 updateCounter();
                 if (driveUploaded) {
-                    recordSuccessfulUpload();
+                    recordSuccessfulUpload(driveCounter);
                     saveSubmittedDate(tanggalWaktu);
                     addSendLog(`${files.baseName}.zip`, "success");
                     submittedBabinsas.push({ desa: selectedDesa, date: tanggalWaktu });
                 } else {
                     addSendLog(`${files.baseName}.zip`, "failed", uploadErrorMessage);
-                    showNotification("File laporan berhasil dibuat, tetapi belum berhasil dikirim ke Google Drive.", "warning");
+                    console.warn("File laporan berhasil dibuat, tetapi upload ke Google Drive gagal:", uploadErrorMessage);
                 }
             } catch (error) {
                 console.error("Gagal membuat file laporan:", error);
@@ -1407,6 +1470,8 @@
         async function initialize() {
             if (!setupCanvas()) return;
 
+            loadRunningText();
+
             try {
                 await loadAppConfig();
             } catch (error) {
@@ -1432,6 +1497,22 @@
 
         }
 
+        async function loadRunningText() {
+            const content = document.getElementById("runningTextContent");
+            if (!content) return;
+
+            try {
+                const response = await fetch("RUNNING.txt", { cache: "no-store" });
+                if (!response.ok) {
+                    throw new Error(`Gagal memuat RUNNING.TXT (HTTP ${response.status})`);
+                }
+                content.textContent = (await response.text()).replace(/\s+/g, " ").trim() || "RUNNING.TXT kosong";
+            } catch (error) {
+                console.error("Gagal memuat RUNNING.TXT:", error);
+                content.textContent = "RUNNING.TXT tidak dapat dimuat.";
+            }
+        }
+
         function setupCanvas() {
             const canvas = document.getElementById('canvas');
             if (!canvas.getContext) {
@@ -1443,8 +1524,6 @@
 
         async function loadDesaList() {
             const select = document.getElementById('selectDesa');
-            const loading = document.getElementById('loadingDesa');
-            loading.style.display = 'block';
             select.innerHTML = '<option value="">Pilih Desa/Kelurahan</option>';
 
             try {
@@ -1481,8 +1560,6 @@
             } catch (error) {
                 console.error("Error:", error);
                 showNotification("âœ Gagal memuat daftar desa", "error");
-            } finally {
-                loading.style.display = 'none';
             }
         }
 
@@ -1602,10 +1679,19 @@
             if (!accountId || activeAccountId === accountId) return;
             activeAccountId = accountId;
 
-            const savedCount = localStorage.getItem(getAccountStorageKey('submissionCount'));
-            submissionCount = savedCount ? parseInt(savedCount) : 0;
-            const savedUploads = localStorage.getItem(getAccountStorageKey('successfulUploadsByDate'));
+            const countKey = getAccountStorageKey('submissionCount');
+            const savedCount = localStorage.getItem(countKey);
+            submissionCount = savedCount === null ? 0 : parseInt(savedCount, 10);
+            if (savedCount === null) {
+                localStorage.setItem(countKey, '0');
+            }
+
+            const uploadsKey = getAccountStorageKey('successfulUploadsByDate');
+            const savedUploads = localStorage.getItem(uploadsKey);
             successfulUploadsByDate = savedUploads ? JSON.parse(savedUploads) : {};
+            if (savedUploads === null) {
+                localStorage.setItem(uploadsKey, JSON.stringify(successfulUploadsByDate));
+            }
             loadLastSubmittedDates();
             const logsContainer = document.getElementById("logTerkirim");
             if (logsContainer) logsContainer.innerHTML = '';
@@ -1613,12 +1699,51 @@
             loadSendLogs();
         }
 
+        function applyDriveUploadCounter(counter) {
+            if (!counter || !Number.isInteger(counter.total) || counter.total < 0 ||
+                !counter.dailyCounts || typeof counter.dailyCounts !== "object") {
+                throw new Error("Counter dari Google Drive tidak valid");
+            }
+
+            successfulUploadsByDate = Object.fromEntries(
+                Object.entries(counter.dailyCounts)
+                    .filter(([date, count]) =>
+                        /^\d{4}-\d{2}-\d{2}$/.test(date) &&
+                        Number.isInteger(count) &&
+                        count >= 0)
+            );
+            localStorage.setItem(
+                getAccountStorageKey('successfulUploadsByDate'),
+                JSON.stringify(successfulUploadsByDate)
+            );
+            renderSuccessfulUploadCounter();
+        }
+
+        async function syncDriveUploadCounter(accountId) {
+            if (typeof window.getDriveUploadCounter !== "function") return;
+            const revision = successfulUploadRevision;
+            try {
+                const counter = await window.getDriveUploadCounter(accountId);
+                if (activeAccountId === accountId && revision === successfulUploadRevision) {
+                    applyDriveUploadCounter(counter);
+                }
+            } catch (error) {
+                console.error("Gagal menyinkronkan counter Google Drive:", error);
+            }
+        }
+
         function updateCounter() {
             submissionCount++;
             localStorage.setItem(getAccountStorageKey('submissionCount'), submissionCount.toString());
         }
 
-        function recordSuccessfulUpload() {
+        function recordSuccessfulUpload(counter = null) {
+            successfulUploadRevision++;
+            if (counter) {
+                applyDriveUploadCounter(counter);
+                return;
+            }
+
             const now = new Date();
             const { year, month, day } = getIndonesiaDateParts(now);
             const dateKey = `${year}-${month}-${day}`;
