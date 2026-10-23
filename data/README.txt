@@ -78,12 +78,14 @@ dan project Apps Script baru, lalu ikuti panduan di:
 Upload akan membuat struktur:
 
   Folder Drive Baru/
-    ID Akun (Desa/Kelurahan)/
-      Tahun/
-        Bulan/
-          file.zip
+    Tahun/
+      Bulan/
+        Desa atau Kelurahan/
+          Nama Desa/Kelurahan/
+            file.zip
 
-Nama ZIP menggunakan wilayah dan tanggal laporan yang dipilih.
+Nama ZIP menggunakan wilayah dan tanggal laporan yang dipilih. Counter dihitung
+dari file ZIP di Drive; tidak diperlukan file `_counters.json`.
 
 
 5. SETELAH MENGUBAH FILE DATA

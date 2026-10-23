@@ -125,12 +125,6 @@
             box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
         }
 
-        .offline-icon {
-            margin-bottom: 14px;
-            color: #D6C68F;
-            font-size: 42px;
-        }
-
         .offline-card p {
             color: #E8EBDD;
             font-size: 16px;
@@ -232,6 +226,20 @@
             filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.24));
         }
 
+        #desaStartModal .modal-logo.coordinate-logo-hidden {
+            animation: none;
+            opacity: 0;
+            filter: blur(8px) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.24));
+        }
+
+        #desaStartModal .modal-logo.coordinate-logo-revealing {
+            animation: none;
+            opacity: 1;
+            filter: blur(0) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.24));
+            -webkit-transition: opacity 1.2s ease, -webkit-filter 1.2s ease;
+            transition: opacity 1.2s ease, filter 1.2s ease;
+        }
+
         #printable-area {
             width: 100% !important;
             margin: 0 !important;
@@ -245,7 +253,12 @@
         }
 
         .status-icon {
-            font-size: 8px;
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 5px;
+            border-radius: 50%;
+            vertical-align: middle;
         }
 
         .status-icon.connected {
@@ -338,18 +351,22 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            height: 52px;
+            min-height: 52px;
             margin-top: 5px;
-            padding: 10px 18px;
+            padding: 8px 12px;
             border: 1px solid #BFD5F1;
-            -moz-border-radius: 0;
-            -webkit-border-radius: 0;
-            border-radius: 0;
+            -moz-border-radius: 999px;
+            -webkit-border-radius: 999px;
+            border-radius: 999px;
             background: linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%);
             color: #172033;
             font-size: clamp(18px, 3vw, 28px);
             font-weight: 600;
+            line-height: 1.2;
+            text-align: center;
+            overflow-wrap: anywhere;
             cursor: pointer;
+            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
         }
 
         .file-picker-label:hover {
@@ -452,28 +469,36 @@
 
         .tanggal-input-kustom {
             position: relative;
+            display: flex;
+            align-items: stretch;
             width: 100%;
-            height: 57px;
+            min-height: 60px;
+            height: 60px;
             margin-top: 0;
             cursor: pointer;
             border: 1px solid #BFD5F1;
-            border-radius: 0;
+            border-radius: 999px;
             background: linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%);
-            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            overflow: hidden;
+            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
         }
 
         .waktu-input-kustom {
             position: relative;
+            display: flex;
+            align-items: stretch;
             flex: 1 1 0;
             min-width: 0;
-            height: 57px;
+            min-height: 60px;
+            height: 60px;
             cursor: pointer;
             border: 1px solid #BFD5F1;
             -moz-border-radius: 0;
             -webkit-border-radius: 0;
-            border-radius: 0;
+            border-radius: 999px;
             background: linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%);
-            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            overflow: hidden;
+            transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
         }
 
         #tanggalWaktuDisplay {
@@ -485,26 +510,32 @@
             align-items: center;
             justify-content: center;
             width: 100%;
-            height: 55px;
+            min-height: 55px;
             margin-top: 0;
             padding: 10px 8px;
             border: 0;
-            -moz-border-radius: 0;
-            -webkit-border-radius: 0;
-            border-radius: 0;
+            -moz-border-radius: inherit;
+            -webkit-border-radius: inherit;
+            border-radius: inherit;
             background: transparent;
             color: #172033;
             font-size: clamp(18px, 3vw, 28px);
             font-weight: 600;
+            line-height: 1.2;
+            text-align: center;
+            overflow-wrap: anywhere;
             cursor: pointer;
             pointer-events: none;
         }
 
         .date-picker-trigger {
-            position: absolute;
-            inset: 0;
+            position: relative;
             z-index: 1;
+            display: flex;
+            align-items: stretch;
+            flex: 1 1 auto;
             width: 100%;
+            min-height: 60px;
             height: 100%;
             margin: 0;
             padding: 0;
@@ -512,6 +543,7 @@
             border-radius: inherit;
             background: transparent;
             color: inherit;
+            line-height: normal;
         }
 
         .date-picker-trigger:hover:not(:disabled),
@@ -532,9 +564,11 @@
         }
 
         .image-input-group .file-picker-label:active {
-            border-color: #829B89;
-            background: #C7D8CC;
-            color: #263A2C;
+            border-color: #52755D;
+            background: #9DB9A5;
+            color: #1F3325;
+            box-shadow: 0 0 0 3px rgba(82, 117, 93, 0.24);
+            transform: scale(0.98);
         }
 
         .media-date-row .tanggal-input-kustom {
@@ -550,8 +584,10 @@
         }
 
         .media-date-row .tanggal-input-kustom:active {
-            border-color: #8297AC;
-            background: #C8D6E4;
+            border-color: #56718A;
+            background: #AFC3D6;
+            box-shadow: 0 0 0 3px rgba(86, 113, 138, 0.25);
+            transform: scale(0.98);
         }
 
         .media-date-row .tanggal-input-kustom .date-picker-label {
@@ -575,8 +611,10 @@
         }
 
         .media-date-row .waktu-input-kustom:active {
-            border-color: #A39075;
-            background: #DCD0BE;
+            border-color: #8A6841;
+            background: #D2B995;
+            box-shadow: 0 0 0 3px rgba(138, 104, 65, 0.24);
+            transform: scale(0.98);
         }
 
         .media-date-row .waktu-input-kustom .date-picker-label {
@@ -778,15 +816,63 @@
         .notification.warning {
             background: #D97706;
         }
+
+        .notification.notification-plain {
+            background: transparent;
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+            -moz-border-radius: 0;
+            -webkit-border-radius: 0;
+            border-radius: 0;
+            -webkit-box-shadow: none;
+            -moz-box-shadow: none;
+            box-shadow: none;
+            animation: coordinate-notification-spin 2.6s ease-in-out forwards;
+        }
+
+        .notification.coordinate-notification {
+            right: auto;
+            bottom: auto;
+            left: 50%;
+            top: 50%;
+            width: max-content;
+            max-width: calc(100vw - 24px);
+            padding: 0;
+            z-index: 1100;
+            pointer-events: none;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+        }
+
+        @keyframes coordinate-notification-spin {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            52% {
+                opacity: 1;
+                transform: translate(-50%, -50%) rotate(1080deg);
+            }
+            70% {
+                opacity: 1;
+                transform: translate(-50%, -50%) rotate(1080deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) rotate(1080deg);
+            }
+        }
         
         .file-input-container {
             margin-top: 10px;
         }
 
         .media-date-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             align-items: stretch;
             gap: 8px;
+            margin-top: 12px;
         }
 
         .image-input-group,
@@ -799,12 +885,19 @@
 
         .media-date-row .file-picker-label,
         .media-date-row .date-picker-label {
-            height: 52px;
-            margin-top: 5px;
-            padding: 10px 8px;
-            font-size: clamp(14px, 2vw, 20px);
-            white-space: nowrap;
+            box-sizing: border-box;
+            min-height: 60px;
+            height: 60px;
+            margin-top: 0;
+            padding: 6px 8px;
+            font-size: clamp(12px, 1.8vw, 18px);
+            white-space: normal;
             text-align: center;
+        }
+
+        .media-date-row .file-picker-label {
+            padding: 6px 8px;
+            line-height: 1.15;
         }
 
         .media-date-row .tanggal-input-kustom,
@@ -813,17 +906,37 @@
         }
 
         .media-date-row .date-picker-label {
-            height: 55px;
-            margin-top: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            min-height: 60px;
+            height: 60px;
+            padding: 6px 8px;
+            font-size: clamp(12px, 1.8vw, 18px);
+            line-height: 1.2;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
         }
 
         .media-date-row .validation-message {
             min-height: 0;
             margin-top: 4px;
             font-size: 12px;
+        }
+
+        .media-date-row .waktu-input-kustom .date-picker-label {
+            color: #34483A;
+        }
+
+        @media (max-width: 480px) {
+            .media-date-row {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 4px;
+            }
+
+            .media-date-row .file-picker-label,
+            .media-date-row .date-picker-label {
+                padding-right: 2px;
+                padding-left: 2px;
+                font-size: clamp(10px, 3vw, 12px);
+            }
         }
         
         .input-section {
@@ -917,6 +1030,19 @@
             color: #D5E6FA;
             font-size: 14px;
             margin-top: 5px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 6px;
+            border: 2px solid #D5E6FA;
+            border-top-color: transparent;
+            border-radius: 50%;
+            vertical-align: -2px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
         }
         
         .combined-button {
@@ -1529,11 +1655,6 @@
             100% { transform: rotate(360deg); }
         }
         
-        .fa-spin {
-            -webkit-animation: spin 1s infinite linear;
-            animation: spin 1s infinite linear;
-        }
-
         .dashboard-desa-status {
             display: none;
         }
@@ -1572,6 +1693,37 @@
             pointer-events: none;
         }
 
+        .desa-start-card .app-modal-title {
+            position: relative;
+            margin: 0 0 8px;
+            color: #F5D889;
+            font-family: "Segoe UI", "Trebuchet MS", Arial, sans-serif;
+            font-size: 30px;
+            font-size: clamp(24px, 7vw, 34px);
+            font-weight: 900;
+            line-height: 1.15;
+            text-align: center;
+            text-shadow:
+                0 1px 0 #D0A94F,
+                0 2px 0 #A98032,
+                0 3px 0 #806020,
+                0 4px 0 #594315,
+                0 5px 8px rgba(0, 0, 0, 0.75);
+        }
+
+        .desa-start-card .modal-logo-caption {
+            position: relative;
+            margin: -14px 0 12px;
+            color: #F5D889;
+            font-family: "Segoe UI", "Trebuchet MS", Arial, sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: 3px;
+            line-height: 1.2;
+            text-align: center;
+            text-shadow: 0 1px 0 #A98032, 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
         .desa-start-card h2 {
             color: #BFDBFE;
             font-size: 20px;
@@ -1583,15 +1735,16 @@
             margin-bottom: 12px;
         }
 
+        #installPwaButton,
+        #selectDesa {
+            width: 100%;
+            min-height: 48px;
+            margin: 0;
+        }
+
         #installPwaButton {
             display: none;
-            position: fixed;
-            right: 16px;
-            bottom: 16px;
-            z-index: 900;
-            width: auto;
-            margin: 0;
-            padding: 10px 14px;
+            padding: 9px 14px;
             border: 1px solid #91A083;
             background: #46533F;
             color: #F2F3EC;
@@ -1600,6 +1753,10 @@
 
         #installPwaButton.visible {
             display: block;
+        }
+
+        #selectDesa[hidden] {
+            display: none;
         }
 
         #installPwaButton:hover:not(:disabled) {
@@ -1656,6 +1813,11 @@
 
         .desa-start-card h2 {
             font-size: 44px;
+        }
+
+        .desa-start-card .app-modal-title {
+            font-size: 30px;
+            font-size: clamp(22px, 7vw, 32px);
         }
 
         .desa-start-card p {

@@ -5,7 +5,7 @@ GOOGLE APPS SCRIPT BARU
    `Code.gs` adalah `1U6C4geioUnHPs6OUK19ukQMpYHr-3j65`.
 2. Jika memakai folder lain, salin ID dari URL:
    https://drive.google.com/drive/folders/ID_FOLDER
-   lalu ganti nilai `ROOT_FOLDER_ID` di `Code.gs`.
+   lalu ganti nilai `PARENT_FOLDER_ID` di `Code.gs`.
 3. Buka script.google.com, buat project baru, lalu salin isi Code.gs.
 4. Deploy > New deployment > Web app.
    - Execute as: Me
@@ -14,21 +14,28 @@ GOOGLE APPS SCRIPT BARU
 
 Struktur folder otomatis:
 Folder Drive Baru/
-  ID Akun (Desa/Kelurahan)/
-    counter.json
-    Tahun/
-      Bulan/
-        file.zip
+  Tahun/
+    Bulan/
+      Desa atau Kelurahan/
+        Nama Desa/Kelurahan/
+          file.zip
 
 Setiap upload mengirim nama Desa/Kelurahan terpilih sebagai `accountId`.
-Counter total dan jumlah per tanggal disimpan di `counter.json` per akun,
-serta disalin ke localStorage browser. Saat pertama kali akun dipilih,
-counter diinisialisasi ke 0 jika belum ada ZIP di folder akun. ZIP yang sudah
-ada dihitung saat counter Drive dibuat pertama kali.
+Counter total dan jumlah per tanggal dihitung langsung dari nama file ZIP di
+folder Drive, tanpa membuat file counter terpisah. File `_counters.json` lama
+boleh dibiarkan; script yang baru tidak membaca atau memperbaruinya.
+Saat Desa/Kelurahan dipilih, aplikasi menjalankan action `repairSequence`.
+Urutan juga diperbaiki otomatis setelah setiap upload, sehingga file ZIP
+yang tanggalnya terbaca selalu memakai awalan `001`, `002`, dan seterusnya
+dari tanggal paling awal, lintas bulan dan tahun. Perubahan hanya mengganti
+nama file ZIP di Drive; isi file tidak dihapus. Deployment Apps Script harus
+diperbarui agar perbaikan otomatis tersedia.
 
-Apps Script melayani action `uploadDrive` untuk upload dan `getCounter` untuk
-mengirim counter Drive ke aplikasi. Deploy ulang script setelah Code.gs
-diperbarui agar kedua action tersedia.
+Apps Script melayani action `uploadDrive`, `getCounter`, `listFiles`, dan
+`repairSequence`.
+`listFiles` mengembalikan nama ZIP dari desa/kelurahan dan bulan yang dipilih
+di aplikasi. Deploy ulang script setelah `Code.gs` diperbarui agar action
+tersebut tersedia di Web App.
 
 Upload memeriksa ZIP yang sudah ada pada akun dan tanggal laporan yang sama.
 Permintaan kedua untuk tanggal penuh yang sama ditolak (tahun termasuk),
@@ -43,5 +50,4 @@ dan pastikan respons JSON menyatakan aksi tidak tersedia. Jika Google
 menampilkan halaman 404, URL deployment tidak dapat ditemukan dan upload
 belum dapat digunakan.
 
-Skrip ini tidak menggunakan folder Drive lama. Pastikan akun pemilik
-deployment memiliki akses Editor ke folder Drive baru.
+Pastikan akun pemilik deployment memiliki akses Editor ke folder Drive.
