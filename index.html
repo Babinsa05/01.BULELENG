@@ -30,7 +30,7 @@
                 <option value="">Pilih Desa/Kelurahan</option>
             </select>
             <div class="start-mode-description" aria-live="polite">
-                <span id="runningTextContent" class="marquee-text">Memuat RUNNING.TXT...</span>
+                <span id="runningTextContent" class="marquee-text"></span>
             </div>
         </div>
     </div>
@@ -38,7 +38,7 @@
     <div id="thankYouModal" class="thank-you-modal" role="dialog" aria-modal="true" aria-labelledby="thankYouTitle" hidden>
         <div class="thank-you-card">
             <img class="modal-logo" src="assets/images/logo/logo-1.png" alt="Lambang TNI Angkatan Darat">
-            <h2 id="thankYouTitle">Terima Kasih</h2>
+            <h2 id="thankYouTitle">Suksma</h2>
             <p id="thankYouMessage"></p>
             <button type="button" class="thank-you-button" onclick="closeThankYouModal()">OK</button>
         </div>
@@ -67,8 +67,7 @@
         </div>
         
         <div class="input-section dashboard-desa-status">
-            <div class="mode-description hidden-text">
-                Laporan otomatis disimpan ke Google Drive.
+            <div class="mode-description hidden-text">     
             </div>
             
             <div class="previewBox hidden-text" id="previewDesa"></div>
@@ -82,7 +81,7 @@
                 Instal Aplikasi
             </button>
             <div class="file-input-container">
-                <input type="text" id="watermarkText" class="watermark-input" placeholder="Judul narasi kegiatan" oninput="updatePreview()">
+                <input type="text" id="watermarkText" class="watermark-input" placeholder="Judul narasi kegiatan " oninput="updatePreview()">
                 <div class="media-date-row">
                     <div class="image-input-group">
                         <label class="file-picker-label" for="gambar">Input<br>gambar</label>
