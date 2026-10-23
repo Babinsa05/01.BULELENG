@@ -644,7 +644,7 @@
                 if (successCount === 0) {
                     addChatMessage({
                         type: 'error',
-                        text: 'Ã¢ÂÅ’ Gagal mengirim pesan',
+                        text: 'Gagal mengirim pesan',
                         timestamp: new Date().toISOString()
                     });
                 } else {
@@ -876,7 +876,7 @@
                 img.onerror = function() {
                     document.getElementById("canvas").style.display = "none";
                     validationMsg.className = "validation-message validation-error";
-                    validationMsg.textContent = "Ã¢ÂÅ’ Gagal memuat gambar. File mungkin rusak.";
+                    validationMsg.textContent = "Gagal memuat gambar. File mungkin rusak.";
                     fileInput.value = "";
                     fileIsValid = false;
                 };
@@ -950,7 +950,7 @@
                 
             } catch (error) {
                 console.error("Error:", error);
-                showNotification("Ã¢ÂÅ’ Gagal memuat koordinat", "error");
+                showNotification("Gagal memuat koordinat", "error");
             } finally {
                 loading.style.display = 'none';
                 updatePreview();
