@@ -19,7 +19,7 @@
 <body>
     <div id="desaStartModal">
         <div class="desa-start-card">
-            <h1 class="app-modal-title">DUKOPS BABINSA</h1>
+            <h1 class="app-modal-title">DUKOPS BABINSA RAMIL 05</h1>
             <img
                 class="modal-logo"
                 src="assets/images/logo/logo-1.png"
@@ -81,7 +81,7 @@
                 Instal Aplikasi
             </button>
             <div class="file-input-container">
-                <input type="text" id="watermarkText" class="watermark-input" placeholder="Judul narasi kegiatan " oninput="updatePreview()">
+                <input type="text" id="watermarkText" class="watermark-input" placeholder="Judul narasi kegiatan contoh : Komsos " oninput="updatePreview()">
                 <div class="media-date-row">
                     <div class="image-input-group">
                         <label class="file-picker-label" for="gambar">Input<br>gambar</label>
@@ -115,11 +115,11 @@
                     SIMPAN
                 </button>
                 <button id="exitBtn" class="exit-button" type="button" onclick="exitApplication()">
-                    KELUAR
+                    KELUAR APLIKASI
                 </button>
             </div>
             <div class="counter-container" aria-live="polite">
-                <div class="counter-label">Laporan bulan dipilih</div>
+                <div class="counter-label">Jumlah Laporan </div>
                 <div class="counter-value" id="successfulUploadCount">0</div>
             </div>
             <section class="sent-files-section" aria-labelledby="sentFilesTitle">
@@ -210,7 +210,7 @@
             } catch (error) {
                 console.error("Gagal memperbaiki nomor urut laporan:", error);
                 showNotification(
-                    "Gagal memperbaiki nomor urut laporan. Perbarui deployment Google Apps Script.",
+                    "",
                     "error"
                 );
                 return false;
